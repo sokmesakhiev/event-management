@@ -1,0 +1,122 @@
+name: Deploy to main
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          base: ${{ github.event.before }}
+          ref:  ${{ github.sha }}
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  deploy-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # Set up SSH for Kamal deployment
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{secrets.SSH_PRIVATE_KEY}}" > ~/.ssh/id_rsa
+          echo "${{secrets.SSH_PUBLIC_KEY}}" > ~/.ssh/id_rsa.pub
+          chmod 600 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa.pub
+
+      # Tesing SSH
+      - name: Testing SSH Connetion
+        run: ssh -o StrictHostKeyChecking=no ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}} "echo 'SSH OK from GitHub Actions'"
+
+      # Install Ruby (needed for Kamal)
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+          working-directory: backend
+
+      - name: Install Kamal
+        run: gem install kamal
+
+      # Set up Production Key
+      - name: Setup Production Key
+        run: |
+          echo "${{secrets.RAILS_MASTER_KEY}}" > config/credentials/production.key
+
+      # Login to Docker Registry
+      - name: Login Docker Registry
+        run: |
+          echo "${{secrets.KAMAL_REGISTRY_PASSWORD}}" | docker login \
+            -u "${{secrets.KAMAL_REGISTRY_USERNAME}}" \
+            --password-stdin
+
+      # Deploy
+      - name: Run Kamal Deploy
+        env:
+          RAILS_MASTER_KEY: ${{secrets.RAILS_MASTER_KEY}}
+          KAMAL_REGISTRY_PASSWORD: ${{secrets.KAMAL_REGISTRY_PASSWORD}}
+        run: kamal deploy
+
+  deploy-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{secrets.AWS_REGION}}
+
+      - name: Deploy to S3
+        run: aws s3 sync dist/ s3://${{secrets.S3_BUCKET}} --delete
+
+      - name: Invalidate CloudFront
+        run: aws cloudfront create-invalidation  --distribution-id ${{secrets.CLOUDFRONT_DIST_ID}} --paths "/*"
+
+
