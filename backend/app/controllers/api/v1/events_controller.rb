@@ -7,30 +7,31 @@ module Api
 
       # GET /api/v1/events — public, published, upcoming
       def index
-        events = Event.published.upcoming.order(start_at: :asc)
-        render json: { events: events.map { |e| event_json(e) } }
+        events = Event.published.upcoming.includes(:event_types).order(start_at: :asc)
+        render json: { events: events.map { |e| event_json(e, include_types: true) } }
       end
 
       # GET /api/v1/events/my — current user's created events
       def my_events
-        events = current_user.events.includes(:registrations).order(start_at: :asc)
+        events = current_user.events.includes(:registrations, :event_types).order(start_at: :asc)
         render json: {
           events: events.map { |e|
-            event_json(e).merge(registrations_count: e.registrations.size)
+            event_json(e, include_types: true).merge(registrations_count: e.registrations.size)
           }
         }
       end
 
       # GET /api/v1/events/:id
       def show
-        render json: { event: event_json(@event, include_count: true) }
+        @event = Event.includes(survey: :survey_questions, event_types: []).find(params[:id])
+        render json: { event: event_json(@event, include_count: true, include_survey: true, include_types: true) }
       end
 
       # POST /api/v1/events
       def create
         event = current_user.events.build(event_params)
         if event.save
-          render json: { event: event_json(event) }, status: :created
+          render json: { event: event_json(event, include_types: true) }, status: :created
         else
           render json: { error: event.errors.full_messages.join(", ") }, status: :unprocessable_entity
         end
@@ -39,7 +40,7 @@ module Api
       # PATCH /api/v1/events/:id
       def update
         if @event.update(event_params)
-          render json: { event: event_json(@event) }
+          render json: { event: event_json(@event, include_types: true) }
         else
           render json: { error: @event.errors.full_messages.join(", ") }, status: :unprocessable_entity
         end
@@ -69,14 +70,18 @@ module Api
         params.require(:event).permit(
           :title, :description, :category, :location,
           :start_at, :end_at, :capacity, :price_cents, :currency,
-          :is_published, :brand_color, :banner_url, :logo_url
+          :is_published, :brand_color, :banner_url, :logo_url, :survey_id,
+          event_types_attributes: [
+            :id, :name, :description, :capacity, :price_cents, :position, :_destroy
+          ]
         )
       end
 
-      def event_json(event, include_count: false)
+      def event_json(event, include_count: false, include_survey: false, include_types: false)
         json = {
           id: event.id,
           creator_id: event.creator_id,
+          survey_id: event.survey_id,
           title: event.title,
           description: event.description,
           category: event.category,
@@ -93,8 +98,40 @@ module Api
           created_at: event.created_at,
           updated_at: event.updated_at
         }
-        json[:registrations_count] = event.registrations.count if include_count
+        json[:registrations_count] = event.registrations.size if include_count
+        if include_survey && event.survey
+          json[:survey] = {
+            id:        event.survey.id,
+            title:     event.survey.title,
+            questions: event.survey.survey_questions.map do |q|
+              {
+                id:            q.id,
+                question_text: q.question_text,
+                question_type: q.question_type,
+                options:       q.options,
+                position:      q.position,
+                required:      q.required
+              }
+            end
+          }
+        end
+        if include_types
+          json[:event_types] = event.event_types.map { |t| event_type_json(t) }
+        end
         json
+      end
+
+      def event_type_json(type)
+        {
+          id:          type.id,
+          event_id:    type.event_id,
+          name:        type.name,
+          description: type.description,
+          capacity:    type.capacity,
+          price_cents: type.price_cents,
+          position:    type.position,
+          spots_remaining: type.spots_remaining
+        }
       end
     end
   end

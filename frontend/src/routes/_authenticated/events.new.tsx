@@ -3,8 +3,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { eventsApi } from "@/lib/api-client";
+import { eventsApi, surveysApi, type SurveyQuestionDraft, type ApiEventTypeDraft } from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
+import { SurveyBuilder } from "@/components/survey-builder";
+import { EventTypeBuilder, newEventType } from "@/components/event-type-builder";
 import { SiteHeader } from "@/components/site-header";
 import { ImageUpload } from "@/components/image-upload";
 import { Button } from "@/components/ui/button";
@@ -61,8 +63,36 @@ function NewEvent() {
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
+  // Survey fields
+  const [hasSurvey, setHasSurvey] = useState(false);
+  const [surveyTitle, setSurveyTitle] = useState("Registration Survey");
+  const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestionDraft[]>([
+    { question_text: "", question_type: "text", options: [], required: false },
+  ]);
+
+  // Event type fields
+  const [hasEventTypes, setHasEventTypes] = useState(false);
+  const [eventTypes, setEventTypes] = useState<ApiEventTypeDraft[]>([newEventType(0)]);
+
+  const eventPriceCents = isPaid && price ? Math.round(Number(price) * 100) : 0;
+
   const mutation = useMutation({
     mutationFn: async () => {
+      // 1. Optionally create the survey first
+      let surveyId: string | null = null;
+      if (hasSurvey && surveyQuestions.some((q) => q.question_text.trim())) {
+        const { survey } = await surveysApi.create(surveyTitle, surveyQuestions);
+        surveyId = survey.id;
+      }
+
+      // 2. Build event types payload
+      const eventTypesAttrs = hasEventTypes
+        ? eventTypes
+            .filter((t) => t.name.trim())
+            .map((t, i) => ({ ...t, position: i }))
+        : [];
+
+      // 3. Create the event
       const { event } = await eventsApi.create({
         title: title.trim(),
         description: description.trim() || null,
@@ -77,6 +107,8 @@ function NewEvent() {
         brand_color: brandColor,
         banner_url: bannerUrl,
         logo_url: logoUrl,
+        ...(surveyId ? { survey_id: surveyId } : {}),
+        ...(eventTypesAttrs.length ? { event_types_attributes: eventTypesAttrs } : {}),
       });
       return event;
     },
@@ -291,6 +323,49 @@ function NewEvent() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* ── Event types ── */}
+          <div className="rounded-xl border border-border p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold">Event types / distances</h2>
+                <p className="text-sm text-muted-foreground">
+                  Let participants choose between different options (e.g. 5km, 10km, marathon).
+                </p>
+              </div>
+              <Switch checked={hasEventTypes} onCheckedChange={setHasEventTypes} />
+            </div>
+
+            {hasEventTypes && (
+              <EventTypeBuilder
+                types={eventTypes}
+                onTypesChange={setEventTypes}
+                eventPriceCents={eventPriceCents}
+              />
+            )}
+          </div>
+
+          {/* ── Survey ── */}
+          <div className="rounded-xl border border-border p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold">Registration survey</h2>
+                <p className="text-sm text-muted-foreground">
+                  Ask participants questions when they sign up.
+                </p>
+              </div>
+              <Switch checked={hasSurvey} onCheckedChange={setHasSurvey} />
+            </div>
+
+            {hasSurvey && (
+              <SurveyBuilder
+                title={surveyTitle}
+                onTitleChange={setSurveyTitle}
+                questions={surveyQuestions}
+                onQuestionsChange={setSurveyQuestions}
+              />
+            )}
           </div>
 
           <Button

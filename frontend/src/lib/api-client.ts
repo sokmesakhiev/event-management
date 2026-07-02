@@ -72,9 +72,64 @@ export interface ApiUser {
   created_at: string;
 }
 
+export type SurveyQuestionType = "text" | "single_choice" | "multiple_choice";
+
+export interface ApiSurveyOption {
+  id: string;
+  label: string;
+}
+
+export interface ApiSurveyQuestion {
+  id: string;
+  survey_id: string;
+  question_text: string;
+  question_type: SurveyQuestionType;
+  options: ApiSurveyOption[];
+  position: number;
+  required: boolean;
+}
+
+export interface ApiSurvey {
+  id: string;
+  creator_id: string;
+  title: string;
+  questions: ApiSurveyQuestion[];
+  questions_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiRegistrationAnswer {
+  survey_question_id: string;
+  answer_text?: string;
+  answer_options?: string[];
+}
+
+export interface ApiEventType {
+  id: string;
+  event_id: string;
+  name: string;
+  description: string | null;
+  capacity: number | null;       // null = unlimited per type
+  price_cents: number | null;    // null = inherit event price
+  position: number;
+  spots_remaining: number | null; // null = unlimited
+}
+
+export interface ApiEventTypeDraft {
+  name: string;
+  description?: string;
+  capacity?: number | null;
+  price_cents?: number | null;
+  position: number;
+}
+
 export interface ApiEvent {
   id: string;
   creator_id: string;
+  survey_id: string | null;
+  survey?: ApiSurvey;
+  event_types: ApiEventType[];
   title: string;
   description: string | null;
   category: string;
@@ -102,6 +157,7 @@ export interface ApiRegistration {
   amount_paid_cents: number;
   created_at: string;
   event?: ApiEvent;
+  event_types: ApiEventType[];
   profile?: { display_name: string | null; avatar_url: string | null };
 }
 
@@ -160,11 +216,11 @@ export const eventsApi = {
     return api.get<{ event: ApiEvent }>(`/events/${id}`);
   },
 
-  create(data: Partial<ApiEvent>) {
+  create(data: Partial<ApiEvent> & { event_types_attributes?: ApiEventTypeDraft[] }) {
     return api.post<{ event: ApiEvent }>("/events", { event: data });
   },
 
-  update(id: string, data: Partial<ApiEvent>) {
+  update(id: string, data: Partial<ApiEvent> & { event_types_attributes?: (ApiEventTypeDraft & { id?: string; _destroy?: boolean })[] }) {
     return api.patch<{ event: ApiEvent }>(`/events/${id}`, { event: data });
   },
 
@@ -191,8 +247,11 @@ export const registrationsApi = {
       .catch(() => 0);
   },
 
-  create(eventId: string) {
-    return api.post<{ registration: ApiRegistration }>(`/events/${eventId}/registrations`);
+  create(eventId: string, opts?: { answers?: ApiRegistrationAnswer[]; eventTypeIds?: string[] }) {
+    return api.post<{ registration: ApiRegistration }>(`/events/${eventId}/registrations`, {
+      answers: opts?.answers ?? [],
+      event_type_ids: opts?.eventTypeIds ?? [],
+    });
   },
 
   myRegistrationForEvent(eventId: string) {
@@ -233,5 +292,58 @@ export const uploadsApi = {
     form.append("type", type);
     const res = await api.upload<{ url: string }>("/uploads", form);
     return res.url;
+  },
+};
+
+// ─── Surveys ──────────────────────────────────────────────────────────────────
+
+export interface SurveyQuestionDraft {
+  question_text: string;
+  question_type: SurveyQuestionType;
+  options: ApiSurveyOption[];
+  required: boolean;
+}
+
+export const surveysApi = {
+  list() {
+    return api.get<{ surveys: ApiSurvey[] }>("/surveys");
+  },
+
+  get(id: string) {
+    return api.get<{ survey: ApiSurvey }>(`/surveys/${id}`);
+  },
+
+  create(title: string, questions: SurveyQuestionDraft[]) {
+    return api.post<{ survey: ApiSurvey }>("/surveys", { title, questions });
+  },
+
+  update(id: string, title: string, questions: SurveyQuestionDraft[]) {
+    return api.patch<{ survey: ApiSurvey }>(`/surveys/${id}`, { title, questions });
+  },
+
+  delete(id: string) {
+    return api.delete<{ message: string }>(`/surveys/${id}`);
+  },
+};
+
+// ─── Survey Responses ─────────────────────────────────────────────────────────
+
+export interface ApiSurveyResponse {
+  registration_id: string;
+  user: { id: string; display_name: string | null; email: string };
+  answers: Array<{
+    survey_question_id: string;
+    question_text: string;
+    question_type: SurveyQuestionType;
+    answer_text: string | null;
+    answer_options: string[];
+  }>;
+}
+
+export const surveyResponsesApi = {
+  forEvent(eventId: string) {
+    return api.get<{ survey: ApiSurvey; responses: ApiSurveyResponse[] }>(
+      `/events/${eventId}/survey_responses`
+    );
   },
 };

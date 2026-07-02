@@ -32,6 +32,16 @@ Rails.application.routes.draw do
       get   "profile", to: "profiles#show"
       patch "profile", to: "profiles#update"
 
+      # Surveys (organizer manages their surveys)
+      get    "surveys",     to: "surveys#index"
+      post   "surveys",     to: "surveys#create"
+      get    "surveys/:id", to: "surveys#show"
+      patch  "surveys/:id", to: "surveys#update"
+      delete "surveys/:id", to: "surveys#destroy"
+
+      # Survey responses (organizer reads participant answers)
+      get "events/:event_id/survey_responses", to: "survey_responses#index"
+
       # File uploads
       post "uploads", to: "uploads#create"
     end

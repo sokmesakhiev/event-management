@@ -1,6 +1,9 @@
 class Registration < ApplicationRecord
   belongs_to :event
   belongs_to :user
+  has_many :registration_answers, dependent: :destroy
+  has_many :registration_event_types, dependent: :destroy
+  has_many :event_types, through: :registration_event_types
 
   STATUSES = %w[confirmed cancelled].freeze
   PAYMENT_STATUSES = %w[unpaid paid refunded].freeze

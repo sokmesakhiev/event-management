@@ -1,6 +1,12 @@
 class Event < ApplicationRecord
   belongs_to :creator, class_name: "User"
+  belongs_to :survey, optional: true
   has_many :registrations, dependent: :destroy
+  has_many :event_types, -> { order(position: :asc) }, dependent: :destroy
+
+  accepts_nested_attributes_for :event_types,
+    allow_destroy: true,
+    reject_if: :all_blank
 
   has_one_attached :banner_image
   has_one_attached :logo_image

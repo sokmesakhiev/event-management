@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { CalendarDays, MapPin, Users, ArrowLeft, Download, Loader2, Check, QrCode } from "lucide-react";
 import { toast } from "sonner";
-import { eventsApi, registrationsApi } from "@/lib/api-client";
+import { eventsApi, registrationsApi, type ApiRegistrationAnswer } from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
 import { SiteHeader } from "@/components/site-header";
 import { EventQRCode } from "@/components/event-qr-code";
+import { SurveyForm } from "@/components/survey-form";
+import { EventTypeSelector } from "@/components/event-type-selector";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatPrice, categoryLabel } from "@/lib/event-utils";
@@ -16,11 +19,18 @@ export const Route = createFileRoute("/events/$eventId")({
   component: EventDetail,
 });
 
+// Registration steps:
+//   idle → (types if event has types) → (survey if event has survey) → done
+type RegStep = "idle" | "types" | "survey";
+
 function EventDetail() {
   const { eventId } = Route.useParams();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [regStep, setRegStep] = useState<RegStep>("idle");
+  const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
 
   const eventQuery = useQuery({
     queryKey: ["public-event", eventId],
@@ -42,8 +52,11 @@ function EventDetail() {
   });
 
   const register = useMutation({
-    mutationFn: () => registrationsApi.create(eventId),
+    mutationFn: (opts?: { answers?: ApiRegistrationAnswer[]; eventTypeIds?: string[] }) =>
+      registrationsApi.create(eventId, opts),
     onSuccess: () => {
+      setRegStep("idle");
+      setSelectedTypeIds([]);
       queryClient.invalidateQueries({ queryKey: ["my-reg", eventId] });
       queryClient.invalidateQueries({ queryKey: ["event-count", eventId] });
       queryClient.invalidateQueries({ queryKey: ["my-registrations"] });
@@ -54,8 +67,41 @@ function EventDetail() {
   });
 
   const ev = eventQuery.data;
+  const hasTypes = !!ev?.event_types?.length;
+  const hasSurvey = !!ev?.survey?.questions?.length;
   const isFull = !!ev?.capacity && (countQuery.data ?? 0) >= ev.capacity;
   const brandColor = ev?.brand_color ?? "#6366f1";
+
+  // Called when the user clicks the main "Register" button
+  function handleRegisterClick() {
+    if (hasTypes) {
+      setRegStep("types");
+    } else if (hasSurvey) {
+      setRegStep("survey");
+    } else {
+      register.mutate(undefined);
+    }
+  }
+
+  // Called from types selector "Next"
+  function handleTypesDone() {
+    if (hasSurvey) {
+      setRegStep("survey");
+    } else {
+      register.mutate({ eventTypeIds: selectedTypeIds });
+    }
+  }
+
+  // Called from survey "Complete registration"
+  function handleSurveyDone(answers: ApiRegistrationAnswer[]) {
+    register.mutate({ answers, eventTypeIds: selectedTypeIds });
+  }
+
+  function toggleType(id: string) {
+    setSelectedTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -129,21 +175,83 @@ function EventDetail() {
               <p className="mt-6 whitespace-pre-wrap leading-relaxed">{ev.description}</p>
             )}
 
+            {/* Event types preview (outside the reg card) */}
+            {hasTypes && regStep === "idle" && (
+              <div className="mt-6 space-y-2">
+                <p className="text-sm font-medium">Available options</p>
+                <div className="flex flex-wrap gap-2">
+                  {ev.event_types.map((t) => {
+                    const priceCents = t.price_cents ?? ev.price_cents;
+                    return (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm"
+                      >
+                        <span className="font-medium">{t.name}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {priceCents === 0 ? "Free" : formatPrice(priceCents, ev.currency)}
+                        </Badge>
+                        {t.spots_remaining !== null && t.spots_remaining <= 10 && (
+                          <span className="text-xs text-muted-foreground">
+                            {t.spots_remaining === 0 ? "Full" : `${t.spots_remaining} left`}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Registration card */}
             <div
               className="mt-8 rounded-2xl border p-6"
               style={{ borderColor: `${brandColor}44`, backgroundColor: `${brandColor}0a` }}
             >
-              {regQuery.data ? (
+              {/* Types step */}
+              {regStep === "types" && hasTypes ? (
+                <EventTypeSelector
+                  eventTypes={ev.event_types}
+                  eventPriceCents={ev.price_cents}
+                  currency={ev.currency}
+                  selectedIds={selectedTypeIds}
+                  onToggle={toggleType}
+                  onNext={handleTypesDone}
+                  onBack={() => setRegStep("idle")}
+                  brandColor={brandColor}
+                  isPending={register.isPending}
+                  nextLabel={hasSurvey ? "Next: survey" : "Register"}
+                />
+              ) : regStep === "survey" && ev.survey ? (
+                /* Survey step */
+                <SurveyForm
+                  survey={ev.survey}
+                  brandColor={brandColor}
+                  isPending={register.isPending}
+                  onBack={() => setRegStep(hasTypes ? "types" : "idle")}
+                  onSubmit={handleSurveyDone}
+                />
+              ) : regQuery.data ? (
+                /* Already registered */
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <p className="flex items-center gap-2 font-medium" style={{ color: brandColor }}>
-                    <Check className="h-5 w-5" /> You're registered
-                  </p>
+                  <div>
+                    <p className="flex items-center gap-2 font-medium" style={{ color: brandColor }}>
+                      <Check className="h-5 w-5" /> You're registered
+                    </p>
+                    {regQuery.data.event_types?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {regQuery.data.event_types.map((t) => (
+                          <Badge key={t.id} variant="secondary">{t.name}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <Button variant="outline" onClick={() => downloadICS(ev)}>
                     <Download className="h-4 w-4" /> Add to calendar
                   </Button>
                 </div>
               ) : !user && !loading ? (
+                /* Not logged in */
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <p className="text-muted-foreground">Sign in to register for this event.</p>
                   <Button
@@ -155,22 +263,36 @@ function EventDetail() {
                   </Button>
                 </div>
               ) : (
+                /* Default: register button */
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <p className="font-medium">
-                      {ev.price_cents === 0
+                      {hasTypes
+                        ? "Select your type to see pricing"
+                        : ev.price_cents === 0
                         ? "Free registration"
                         : formatPrice(ev.price_cents, ev.currency)}
                     </p>
-                    {ev.price_cents > 0 && (
+                    {!hasTypes && ev.price_cents > 0 && (
                       <p className="text-sm text-muted-foreground">
                         Payment collected by the organizer.
+                      </p>
+                    )}
+                    {hasTypes && (
+                      <p className="text-sm text-muted-foreground">
+                        {ev.event_types.length} option{ev.event_types.length !== 1 ? "s" : ""} available — you can select multiple.
+                      </p>
+                    )}
+                    {hasSurvey && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Includes a short survey ({ev.survey!.questions.length} question
+                        {ev.survey!.questions.length !== 1 ? "s" : ""}).
                       </p>
                     )}
                   </div>
                   <Button
                     disabled={register.isPending || isFull}
-                    onClick={() => register.mutate()}
+                    onClick={handleRegisterClick}
                     style={{ backgroundColor: brandColor }}
                     className="text-white hover:opacity-90 disabled:opacity-50"
                   >

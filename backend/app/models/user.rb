@@ -4,6 +4,7 @@ class User < ApplicationRecord
   has_one :profile, dependent: :destroy
   has_many :events, foreign_key: :creator_id, dependent: :destroy
   has_many :registrations, dependent: :destroy
+  has_many :surveys, foreign_key: :creator_id, dependent: :destroy
 
   validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :password, length: { minimum: 8 }, if: :password_required?

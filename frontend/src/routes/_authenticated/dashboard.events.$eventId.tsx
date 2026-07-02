@@ -14,9 +14,11 @@ import {
   Loader2,
   Palette,
   QrCode,
+  ClipboardList,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
-import { eventsApi, registrationsApi } from "@/lib/api-client";
+import { eventsApi, registrationsApi, surveyResponsesApi, type ApiSurveyResponse } from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
 import { SiteHeader } from "@/components/site-header";
 import { EventQRCode } from "@/components/event-qr-code";
@@ -79,6 +81,12 @@ function ManageEvent() {
   const participantsQuery = useQuery({
     queryKey: ["event-participants", eventId],
     queryFn: () => registrationsApi.forEvent(eventId).then((r) => r.registrations),
+  });
+
+  const surveyResponsesQuery = useQuery({
+    queryKey: ["survey-responses", eventId],
+    enabled: !!ev?.survey_id,
+    queryFn: () => surveyResponsesApi.forEvent(eventId),
   });
 
   const setPayment = useMutation({
@@ -211,15 +219,49 @@ function ManageEvent() {
               />
             </div>
 
+            {/* Per-type breakdown */}
+            {ev.event_types?.length > 0 && (
+              <div className="mt-6 rounded-2xl border border-border bg-card p-5">
+                <p className="text-sm font-semibold mb-3">Registrations by type</p>
+                <div className="space-y-2">
+                  {ev.event_types.map((et) => {
+                    const count = participants.filter((p) =>
+                      p.event_types?.some((t) => t.id === et.id)
+                    ).length;
+                    const pct = participants.length ? Math.round((count / participants.length) * 100) : 0;
+                    return (
+                      <div key={et.id} className="flex items-center gap-3">
+                        <span className="w-32 truncate text-sm">{et.name}</span>
+                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${pct}%`, backgroundColor: activeBrandColor }}
+                          />
+                        </div>
+                        <span className="w-16 text-right text-sm text-muted-foreground">
+                          {count}{et.capacity ? ` / ${et.capacity}` : ""}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Tabs */}
             <Tabs defaultValue="participants" className="mt-10">
-              <TabsList className="grid w-full max-w-sm grid-cols-2">
+              <TabsList className={`grid w-full ${ev?.survey_id ? "max-w-lg grid-cols-3" : "max-w-sm grid-cols-2"}`}>
                 <TabsTrigger value="participants">
                   <Users className="h-4 w-4 mr-1.5" /> Participants
                 </TabsTrigger>
                 <TabsTrigger value="branding">
                   <Palette className="h-4 w-4 mr-1.5" /> QR & Branding
                 </TabsTrigger>
+                {ev?.survey_id && (
+                  <TabsTrigger value="responses">
+                    <ClipboardList className="h-4 w-4 mr-1.5" /> Responses
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {/* ── Participants ── */}
@@ -240,11 +282,20 @@ function ManageEvent() {
                         i > 0 ? "border-t border-border" : ""
                       }`}
                     >
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-medium">{p.profile?.display_name ?? "Participant"}</p>
                         <p className="text-xs text-muted-foreground">
                           Registered {new Date(p.created_at).toLocaleDateString()}
                         </p>
+                        {p.event_types?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {p.event_types.map((t) => (
+                              <Badge key={t.id} variant="secondary" className="text-xs">
+                                {t.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         {ev.price_cents > 0 && (
@@ -383,6 +434,101 @@ function ManageEvent() {
                   </Button>
                 </div>
               </TabsContent>
+
+              {/* ── Survey Responses ── */}
+              {ev?.survey_id && (
+                <TabsContent value="responses" className="mt-6">
+                  {surveyResponsesQuery.isLoading && (
+                    <p className="text-sm text-muted-foreground">Loading responses…</p>
+                  )}
+
+                  {surveyResponsesQuery.isError && (
+                    <p className="text-sm text-destructive">Could not load survey responses.</p>
+                  )}
+
+                  {surveyResponsesQuery.data && (
+                    <>
+                      {/* Survey title + response count */}
+                      <div className="mb-6 flex items-center justify-between">
+                        <div>
+                          <h2 className="font-semibold">{surveyResponsesQuery.data.survey.title}</h2>
+                          <p className="text-sm text-muted-foreground">
+                            {surveyResponsesQuery.data.responses.length} response
+                            {surveyResponsesQuery.data.responses.length !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                      </div>
+
+                      {surveyResponsesQuery.data.responses.length === 0 ? (
+                        <div className="rounded-2xl border border-border p-10 text-center text-sm text-muted-foreground">
+                          <MessageSquare className="mx-auto h-8 w-8 mb-3 opacity-30" />
+                          No survey responses yet.
+                        </div>
+                      ) : (
+                        /* Per-question breakdown */
+                        <div className="space-y-6">
+                          {surveyResponsesQuery.data.survey.questions.map((q) => {
+                            const answersForQ = surveyResponsesQuery.data!.responses
+                              .map((r) => ({
+                                user: r.user,
+                                answer: r.answers.find((a) => a.survey_question_id === q.id),
+                              }))
+                              .filter((row) => row.answer);
+
+                            return (
+                              <div key={q.id} className="rounded-2xl border border-border bg-card overflow-hidden">
+                                <div className="border-b border-border bg-muted/40 px-5 py-3">
+                                  <p className="font-medium text-sm">{q.question_text}</p>
+                                  <p className="text-xs text-muted-foreground capitalize mt-0.5">
+                                    {q.question_type.replace("_", " ")}
+                                    {q.required && " · required"}
+                                  </p>
+                                </div>
+
+                                {answersForQ.length === 0 ? (
+                                  <p className="px-5 py-4 text-sm text-muted-foreground">No answers yet.</p>
+                                ) : (
+                                  <div className="divide-y divide-border">
+                                    {answersForQ.map(({ user, answer }, i) => (
+                                      <div key={i} className="flex items-start gap-4 px-5 py-3">
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-xs font-medium text-muted-foreground mb-1">
+                                            {user.display_name ?? user.email}
+                                          </p>
+                                          {answer?.question_type === "text" ? (
+                                            <p className="text-sm whitespace-pre-wrap">
+                                              {answer.answer_text || <span className="italic text-muted-foreground">No answer</span>}
+                                            </p>
+                                          ) : (
+                                            <div className="flex flex-wrap gap-1.5">
+                                              {(answer?.answer_options ?? []).length === 0 ? (
+                                                <span className="text-sm italic text-muted-foreground">No answer</span>
+                                              ) : (
+                                                (answer?.answer_options ?? []).map((optId) => {
+                                                  const opt = q.options.find((o) => o.id === optId);
+                                                  return (
+                                                    <Badge key={optId} variant="secondary">
+                                                      {opt?.label ?? optId}
+                                                    </Badge>
+                                                  );
+                                                })
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </TabsContent>
+              )}
             </Tabs>
           </>
         )}
