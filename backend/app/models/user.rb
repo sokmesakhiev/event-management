@@ -1,5 +1,10 @@
 class User < ApplicationRecord
-  has_secure_password
+  # Rails 8.1's has_secure_password auto-generates a stateless password_reset_token
+  # (via generates_token_for) and a class-level find_by_password_reset_token method
+  # by default. This app has its own DB-column-backed reset flow below (token +
+  # expiry persisted, mailer, controller) — the built-in one is disabled so it
+  # doesn't shadow our #password_reset_token attribute reader.
+  has_secure_password reset_token: false
 
   has_one :profile, dependent: :destroy
   has_many :events, foreign_key: :creator_id, dependent: :destroy
@@ -14,7 +19,7 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :password, length: { minimum: 8 }, if: :password_required?
 
-  before_save { self.email = email.downcase.strip }
+  before_validation { self.email = email.downcase.strip if email.present? }
   after_create :create_profile!
   after_create :generate_email_verification_token!
 
@@ -48,7 +53,9 @@ class User < ApplicationRecord
     def find_by_valid_password_reset_token(token)
       return nil if token.blank?
       user = find_by(password_reset_token: token)
-      user&.password_reset_token_valid? ? user : nil
+      return nil unless user
+      return nil unless user.password_reset_token_valid?
+      user
     end
 
     def find_by_valid_email_verification_token(token)

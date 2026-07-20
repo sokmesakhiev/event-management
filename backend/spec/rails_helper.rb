@@ -26,6 +26,8 @@ RSpec.configure do |config|
   # `deliver_later` calls in `perform_enqueued_jobs { ... }`.
   config.include ActiveJob::TestHelper, type: :request
 
+  config.example_status_persistence_file_path = "spec/examples.txt"
+
   # DatabaseCleaner
   config.before(:suite) { DatabaseCleaner.strategy = :transaction }
   config.before(:each) { DatabaseCleaner.start }

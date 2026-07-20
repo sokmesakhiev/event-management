@@ -19,10 +19,16 @@ class Event < ApplicationRecord
   validates :price_cents, numericality: { greater_than_or_equal_to: 0 }
   validate :end_after_start
 
+  before_validation :default_price_cents
+
   scope :published, -> { where(is_published: true) }
   scope :upcoming, -> { where("start_at >= ?", Time.current) }
 
   private
+
+  def default_price_cents
+    self.price_cents ||= 0
+  end
 
   def end_after_start
     return unless end_at && start_at
