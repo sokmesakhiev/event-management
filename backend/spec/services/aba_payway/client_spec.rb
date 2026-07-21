@@ -28,3 +28,28 @@ RSpec.describe AbaPayway::Client, ".for_event" do
     expect(client.instance_variable_get(:@api_key)).to eq("organizer_key")
   end
 end
+
+RSpec.describe AbaPayway::Client, ".config" do
+  it "reads merchant_id/api_key from ENV and base_url from config/payway.yml for the current environment" do
+    original = ENV.to_hash
+    ENV["ABA_PAYWAY_MERCHANT_ID"] = "yml_merchant"
+    ENV["ABA_PAYWAY_API_KEY"] = "yml_key"
+
+    config = described_class.config
+
+    expect(config.merchant_id).to eq("yml_merchant")
+    expect(config.api_key).to eq("yml_key")
+    expect(config.base_url).to eq("https://checkout-sandbox.payway.com.kh")
+  ensure
+    ENV.replace(original)
+  end
+
+  it "lets an explicit ABA_PAYWAY_BASE_URL override the environment's default" do
+    original = ENV.to_hash
+    ENV["ABA_PAYWAY_BASE_URL"] = "https://staging.payway.example"
+
+    expect(described_class.config.base_url).to eq("https://staging.payway.example")
+  ensure
+    ENV.replace(original)
+  end
+end

@@ -20,8 +20,13 @@ any KHQR-participating bank app. The integration lives in
    ```
    ABA_PAYWAY_MERCHANT_ID=your-sandbox-merchant-id
    ABA_PAYWAY_API_KEY=your-sandbox-api-key
-   ABA_PAYWAY_BASE_URL=https://checkout-sandbox.payway.com.kh
    ```
+   These two env vars are the only required setup — `backend/config/payway.yml`
+   (one section per Rails environment, same pattern as `config/database.yml`)
+   already pins the right `base_url` per environment (sandbox in
+   development/test, live in production), so `ABA_PAYWAY_BASE_URL` is only
+   needed if you want to override that, e.g. to point at a staging PayWay
+   account.
 4. Test a registration + payment end-to-end locally. Sandbox KHQR codes can be
    "paid" using ABA's sandbox test tools — check the developer docs at
    **https://developer.payway.com.kh** for the current sandbox testing flow,
@@ -39,8 +44,10 @@ any KHQR-participating bank app. The integration lives in
    ```hcl
    aba_payway_merchant_id = "..."
    aba_payway_api_key     = "..."
-   aba_payway_base_url    = "https://checkout.payway.com.kh"
    ```
+   `aba_payway_base_url` is optional now — `config/payway.yml` already
+   defaults production to `https://checkout.payway.com.kh`. Only set it if
+   you need to override that.
 4. Run `terraform apply` — this writes the credentials to AWS Secrets
    Manager and injects them into the ECS task (see `infrastructure/secrets.tf`,
    `infrastructure/iam.tf`, `infrastructure/ecs.tf`).

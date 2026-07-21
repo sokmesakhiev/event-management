@@ -1,0 +1,32 @@
+# ABA PayWay (KHQR) gateway settings — one section per environment, loaded
+# via Rails.application.config_for(:payway), the same mechanism/shape as
+# config/database.yml (a `shared:` block merged into every environment,
+# ERB-evaluated). See app/services/aba_payway/client.rb, which reads this as
+# its defaults.
+#
+# merchant_id / api_key are real secrets for whichever PayWay account
+# receives Rally's own "pay to publish" charges — never hardcode them here.
+# Provide them via ENV in every environment (shell/direnv in development,
+# Kamal secrets / the ECS task definition in production). Per-organizer
+# credentials (for their own registration payments) are a separate thing —
+# see Profile#payway_merchant_id / #payway_api_key — and aren't part of this
+# file.
+#
+# What this file *does* pin per environment is base_url, so production can
+# never silently fall back to PayWay's sandbox just because an env var was
+# left unset.
+#
+# Docs: https://developer.payway.com.kh
+
+shared:
+  merchant_id: <%= ENV["ABA_PAYWAY_MERCHANT_ID"] %>
+  api_key: <%= ENV["ABA_PAYWAY_API_KEY"] %>
+
+development:
+  base_url: <%= ENV.fetch("ABA_PAYWAY_BASE_URL", "https://checkout-sandbox.payway.com.kh") %>
+
+test:
+  base_url: <%= ENV.fetch("ABA_PAYWAY_BASE_URL", "https://checkout-sandbox.payway.com.kh") %>
+
+production:
+  base_url: <%= ENV.fetch("ABA_PAYWAY_BASE_URL", "https://checkout.payway.com.kh") %>

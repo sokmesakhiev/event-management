@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 });
 
 function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const queryClient = useQueryClient();
 
   const profileQuery = useQuery({
@@ -54,6 +54,9 @@ function ProfilePage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      // Display name / avatar are also shown in the header — refresh the
+      // auth user so it updates immediately instead of on next reload.
+      refresh();
       toast.success("Profile saved");
     },
     onError: (e: any) => toast.error(e.message ?? "Could not save your profile."),
@@ -152,7 +155,7 @@ function ProfilePage() {
             </Card>
 
             {/* Payment settings */}
-            <Card>
+            <Card id="payment-settings" className="scroll-mt-24">
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Wallet className="h-5 w-5 text-muted-foreground" />

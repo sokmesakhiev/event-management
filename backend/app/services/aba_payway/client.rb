@@ -6,11 +6,13 @@ require "json"
 # Thin client for the ABA PayWay payment gateway (KHQR).
 #
 # Docs: https://developer.payway.com.kh
-# Sandbox base URL: https://checkout-sandbox.payway.com.kh
-# Production base URL: https://checkout.payway.com.kh
 #
-# Credentials (merchant_id / api_key) come from ABA Bank once you sign up
-# for a PayWay sandbox/production account — see ABA_PAYWAY_SETUP.md.
+# Default credentials/base_url come from config/payway.yml — one section per
+# environment, same pattern as config/database.yml. merchant_id / api_key
+# still ultimately come from ENV (the yml just reads them via ERB), but
+# base_url is now pinned explicitly per environment there, so production can
+# never silently fall back to the sandbox URL just because an env var was
+# left unset.
 module AbaPayway
   class Error < StandardError; end
   class ConfigurationError < Error; end
@@ -20,20 +22,30 @@ module AbaPayway
     GENERATE_QR_PATH = "/api/payment-gateway/v1/payments/generate-qr"
     CHECK_TRANSACTION_PATH = "/api/payment-gateway/v1/payments/check-transaction-2"
 
-    def initialize(merchant_id: ENV["ABA_PAYWAY_MERCHANT_ID"],
-                   api_key: ENV["ABA_PAYWAY_API_KEY"],
-                   base_url: ENV.fetch("ABA_PAYWAY_BASE_URL", "https://checkout-sandbox.payway.com.kh"))
+    def initialize(merchant_id: self.class.config.merchant_id,
+                   api_key: self.class.config.api_key,
+                   base_url: self.class.config.base_url)
       @merchant_id = merchant_id
       @api_key = api_key
       @base_url = base_url.to_s.chomp("/")
     end
 
     class << self
+      # config/payway.yml, keyed by environment (same pattern as
+      # config/database.yml). Re-read on every call rather than cached once
+      # at boot, so ENV overrides take effect immediately without a server
+      # restart, and so tests can swap credentials per example the same way
+      # they always have.
+      def config
+        Rails.application.config_for(:payway)
+      end
+
       # Builds a client for a registration payment (attendee → organizer) on
       # the given event. Uses the event creator's own PayWay credentials when
       # they've connected one via their profile (Profile#payway_configured?),
       # so the money lands directly in the organizer's PayWay account;
-      # otherwise falls back to the platform's default credentials (ENV).
+      # otherwise falls back to the platform's default credentials
+      # (config/payway.yml).
       #
       # Organizer "pay to publish" charges (EventPlanPayment — organizer →
       # Rally) must never use this; they should always use `Client.new` with
@@ -119,7 +131,9 @@ module AbaPayway
 
     def ensure_configured!
       return if @merchant_id.present? && @api_key.present?
-      raise ConfigurationError, "ABA_PAYWAY_MERCHANT_ID / ABA_PAYWAY_API_KEY are not configured"
+      raise ConfigurationError,
+        "ABA PayWay merchant_id / api_key are not configured — set ABA_PAYWAY_MERCHANT_ID / " \
+        "ABA_PAYWAY_API_KEY (read by config/payway.yml)"
     end
 
     def format_time(time)
