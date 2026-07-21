@@ -41,6 +41,46 @@ RSpec.describe Event, type: :model do
     end
   end
 
+  # ── Capacity vs. combined event type limits ─────────────────────────────────
+  describe "capacity_covers_event_types" do
+    it "is not checked while capacity is nil (a draft with no plan yet)" do
+      event = create(:event, capacity: nil)
+      event.event_types.create!(name: "5K", capacity: 1_000, position: 0)
+      expect(event).to be_valid
+    end
+
+    it "rejects a capacity smaller than the combined event type limits" do
+      event = create(:event, capacity: 200)
+      event.event_types.build(name: "5K", capacity: 100, position: 0)
+      event.event_types.build(name: "10K", capacity: 150, position: 1)
+      expect(event).not_to be_valid
+      expect(event.errors[:capacity]).to be_present
+    end
+
+    it "accepts a capacity that covers the combined event type limits" do
+      event = create(:event, capacity: 250)
+      event.event_types.build(name: "5K", capacity: 100, position: 0)
+      event.event_types.build(name: "10K", capacity: 150, position: 1)
+      expect(event).to be_valid
+    end
+
+    it "ignores event types with no capacity of their own (unlimited)" do
+      event = create(:event, capacity: 50)
+      event.event_types.build(name: "Open", capacity: nil, position: 0)
+      expect(event).to be_valid
+    end
+  end
+
+  describe "#combined_event_type_capacity" do
+    it "sums each type's capacity, skipping unlimited (nil) types" do
+      event = create(:event, capacity: 1_000)
+      event.event_types.create!(name: "5K", capacity: 100, position: 0)
+      event.event_types.create!(name: "10K", capacity: 150, position: 1)
+      event.event_types.create!(name: "Open", capacity: nil, position: 2)
+      expect(event.reload.combined_event_type_capacity).to eq(250)
+    end
+  end
+
   # ── Scopes ───────────────────────────────────────────────────────────────────
   describe "scopes" do
     let!(:published_upcoming)   { create(:event, is_published: true,  start_at: 1.week.from_now) }

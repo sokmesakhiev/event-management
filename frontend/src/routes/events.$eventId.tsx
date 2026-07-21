@@ -1,7 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { CalendarDays, MapPin, Users, ArrowLeft, Download, Loader2, Check, QrCode } from "lucide-react";
+import {
+  CalendarDays,
+  MapPin,
+  Users,
+  ArrowLeft,
+  Download,
+  Loader2,
+  Check,
+  QrCode,
+} from "lucide-react";
 import { toast } from "sonner";
 import { eventsApi, registrationsApi, type ApiRegistrationAnswer } from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
@@ -47,11 +56,6 @@ function EventDetail() {
     queryFn: () => registrationsApi.myRegistrationForEvent(eventId),
   });
 
-  const countQuery = useQuery({
-    queryKey: ["event-count", eventId],
-    queryFn: () => registrationsApi.registrationCount(eventId),
-  });
-
   const register = useMutation({
     mutationFn: (opts?: { answers?: ApiRegistrationAnswer[]; eventTypeIds?: string[] }) =>
       registrationsApi.create(eventId, opts),
@@ -59,7 +63,7 @@ function EventDetail() {
       setRegStep("idle");
       setSelectedTypeIds([]);
       queryClient.invalidateQueries({ queryKey: ["my-reg", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["event-count", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["public-event", eventId] });
       queryClient.invalidateQueries({ queryKey: ["my-registrations"] });
 
       if (res.registration.payment_status === "unpaid") {
@@ -69,13 +73,22 @@ function EventDetail() {
         if (ev) downloadICS(ev);
       }
     },
-    onError: (e: any) => toast.error(e.message ?? "Could not register"),
+    onError: (e: any) => {
+      toast.error(e.message ?? "Could not register");
+      if (e.code === "full") {
+        // The event (or the type they picked) filled up between page load
+        // and submit — refresh capacity so the UI reflects it instead of
+        // leaving a stale "Register" button they could retry against.
+        queryClient.invalidateQueries({ queryKey: ["public-event", eventId] });
+      }
+    },
   });
 
   const ev = eventQuery.data;
   const hasTypes = !!ev?.event_types?.length;
   const hasSurvey = !!ev?.survey?.questions?.length;
-  const isFull = !!ev?.capacity && (countQuery.data ?? 0) >= ev.capacity;
+  const registeredCount = ev?.registrations_count ?? 0;
+  const isFull = !!ev?.capacity && registeredCount >= ev.capacity;
   const brandColor = ev?.brand_color ?? "#6366f1";
 
   // Called when the user clicks the main "Register" button
@@ -105,7 +118,7 @@ function EventDetail() {
 
   function toggleType(id: string) {
     setSelectedTypeIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   }
 
@@ -152,7 +165,11 @@ function EventDetail() {
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="secondary"
-                    style={{ backgroundColor: `${brandColor}22`, color: brandColor, borderColor: `${brandColor}44` }}
+                    style={{
+                      backgroundColor: `${brandColor}22`,
+                      color: brandColor,
+                      borderColor: `${brandColor}44`,
+                    }}
                   >
                     {categoryLabel(ev.category)}
                   </Badge>
@@ -172,8 +189,13 @@ function EventDetail() {
                 </p>
               )}
               <p className="flex items-center gap-2">
-                <Users className="h-5 w-5" /> {countQuery.data ?? 0}
+                <Users className="h-5 w-5" /> {registeredCount}
                 {ev.capacity ? ` / ${ev.capacity}` : ""} registered
+                {isFull && (
+                  <Badge variant="outline" className="ml-1">
+                    Full
+                  </Badge>
+                )}
               </p>
             </div>
 
@@ -251,13 +273,18 @@ function EventDetail() {
                 /* Already registered and paid (or free) */
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <p className="flex items-center gap-2 font-medium" style={{ color: brandColor }}>
+                    <p
+                      className="flex items-center gap-2 font-medium"
+                      style={{ color: brandColor }}
+                    >
                       <Check className="h-5 w-5" /> You're registered
                     </p>
                     {regQuery.data.event_types?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {regQuery.data.event_types.map((t) => (
-                          <Badge key={t.id} variant="secondary">{t.name}</Badge>
+                          <Badge key={t.id} variant="secondary">
+                            {t.name}
+                          </Badge>
                         ))}
                       </div>
                     )}
@@ -286,8 +313,8 @@ function EventDetail() {
                       {hasTypes
                         ? "Select your type to see pricing"
                         : ev.price_cents === 0
-                        ? "Free registration"
-                        : formatPrice(ev.price_cents, ev.currency)}
+                          ? "Free registration"
+                          : formatPrice(ev.price_cents, ev.currency)}
                     </p>
                     {!hasTypes && ev.price_cents > 0 && (
                       <p className="text-sm text-muted-foreground">
@@ -296,7 +323,8 @@ function EventDetail() {
                     )}
                     {hasTypes && (
                       <p className="text-sm text-muted-foreground">
-                        {ev.event_types.length} option{ev.event_types.length !== 1 ? "s" : ""} available — you can select multiple.
+                        {ev.event_types.length} option{ev.event_types.length !== 1 ? "s" : ""}{" "}
+                        available — you can select multiple.
                       </p>
                     )}
                     {hasSurvey && (

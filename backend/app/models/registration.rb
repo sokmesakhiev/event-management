@@ -36,7 +36,11 @@ class Registration < ApplicationRecord
   def event_not_full
     return unless event&.capacity
     if event.registrations.count >= event.capacity
-      errors.add(:base, "This event is full")
+      # :event_full is a machine-readable code — see
+      # RegistrationsController#create, which maps it to `code: "full"` in
+      # the JSON response so the frontend can react (lock the UI, refresh
+      # capacity) instead of just string-matching the message.
+      errors.add(:base, :event_full, message: "This event is full")
     end
   end
 end

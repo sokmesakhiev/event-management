@@ -4,6 +4,11 @@ module Api
       before_action :authenticate_user!
       before_action :set_event, only: [ :create ]
 
+      # Registration/RegistrationEventType error codes that mean "this event
+      # (or event type) has reached capacity" — see
+      # Registration#event_not_full and RegistrationEventType#event_type_not_full.
+      FULL_ERROR_CODES = [ :event_full, :event_type_full ].freeze
+
       # GET /api/v1/registrations — current user's registrations with event data
       def index
         registrations = current_user.registrations
@@ -74,7 +79,7 @@ module Api
           render json: { registration: registration_json(registration, include_types: true) }, status: :created
         end
       rescue ActiveRecord::RecordInvalid => e
-        render json: { error: e.message }, status: :unprocessable_entity
+        render json: capacity_error_json(e.record), status: :unprocessable_entity
       end
 
       # PATCH /api/v1/registrations/:id — organizer updates payment status
@@ -122,6 +127,19 @@ module Api
 
       def payment_update_params
         params.require(:registration).permit(:payment_status, :amount_paid_cents)
+      end
+
+      # Builds a clean { error:, code: } payload for a failed registration.
+      # Uses the record's own error messages instead of RecordInvalid#message
+      # (which prepends an ugly "Validation failed: " string), and surfaces a
+      # machine-readable `code: "full"` when the failure was a capacity
+      # validation (Registration#event_not_full / RegistrationEventType#
+      # event_type_not_full — see their :event_full / :event_type_full error
+      # codes) so the frontend can react distinctly instead of string-matching.
+      def capacity_error_json(record)
+        details = record.errors.details[:base] || []
+        is_full = details.any? { |d| FULL_ERROR_CODES.include?(d[:error]) }
+        { error: record.errors.full_messages.join(", "), code: is_full ? "full" : nil }.compact
       end
 
       # Sum the effective price of each selected type; fall back to event price if no types

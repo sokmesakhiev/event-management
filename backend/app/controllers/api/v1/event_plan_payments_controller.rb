@@ -7,7 +7,7 @@ module Api
       # Starts (or completes, for the free tier) the "pay to publish" flow
       # for one of the current user's events.
       def create
-        event = current_user.events.find(params[:event_id])
+        event = current_user.events.includes(:event_types).find(params[:event_id])
 
         if event.is_published?
           render json: { error: "This event is already published." }, status: :unprocessable_entity
@@ -18,6 +18,23 @@ module Api
         details = Event::PLANS[plan]
         unless details
           render json: { error: "Unknown plan." }, status: :unprocessable_entity
+          return
+        end
+
+        # Reject upfront, before charging anything (or publishing the free
+        # tier), if the event's own types already add up to more people than
+        # this plan allows. Checked here rather than relying solely on
+        # Event's own capacity validation because that only runs once we try
+        # to persist the update — we never want to take an organizer's
+        # payment and then fail to actually publish the event.
+        combined_type_capacity = event.combined_event_type_capacity
+        if combined_type_capacity > details[:capacity]
+          render json: {
+            error: "The #{details[:label]} plan allows up to #{details[:capacity]} people, but " \
+                   "your event types add up to #{combined_type_capacity} combined. Pick a larger " \
+                   "plan or lower your event types' limits.",
+            code: "plan_capacity_too_low"
+          }, status: :unprocessable_entity
           return
         end
 

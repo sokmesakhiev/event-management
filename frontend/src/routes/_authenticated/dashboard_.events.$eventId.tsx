@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDateTime, formatPrice, categoryLabel } from "@/lib/event-utils";
 import { downloadICS } from "@/lib/ics";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard_/events/$eventId")({
   head: () => ({ meta: [{ title: "Manage event — Rally" }] }),
@@ -177,6 +178,12 @@ function ManageEvent() {
 
   const activeBrandColor = brandColor ?? ev?.brand_color ?? "#6366f1";
 
+  // The most people who could register across all of this event's types
+  // combined — a plan's capacity has to cover at least this many, or
+  // publishing under it would be rejected server-side. Types with no
+  // capacity of their own (unlimited) don't add anything here.
+  const combinedTypeCapacity = ev?.event_types?.reduce((sum, t) => sum + (t.capacity ?? 0), 0) ?? 0;
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -287,6 +294,13 @@ function ManageEvent() {
                     </>
                   )}
                 </p>
+                {combinedTypeCapacity > 0 && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Your event types add up to{" "}
+                    <strong>{combinedTypeCapacity.toLocaleString()}</strong> people combined — pick
+                    a plan with at least that much capacity.
+                  </p>
+                )}
 
                 {selectedPlan ? (
                   <div className="mt-5 rounded-xl border border-border bg-card p-5">
@@ -310,22 +324,34 @@ function ManageEvent() {
                     {plansQuery.isLoading && (
                       <p className="text-sm text-muted-foreground">Loading plans…</p>
                     )}
-                    {plansQuery.data?.map((plan) => (
-                      <button
-                        key={plan.id}
-                        type="button"
-                        onClick={() => setSelectedPlan(plan.id)}
-                        className="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary"
-                      >
-                        <p className="text-sm font-semibold">{plan.label}</p>
-                        <p className="mt-1 text-lg font-bold">
-                          {plan.price_cents === 0 ? "Free" : formatPrice(plan.price_cents, "usd")}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Up to {plan.capacity.toLocaleString()} people
-                        </p>
-                      </button>
-                    ))}
+                    {plansQuery.data?.map((plan) => {
+                      const tooSmall = plan.capacity < combinedTypeCapacity;
+                      return (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          disabled={tooSmall}
+                          onClick={() => setSelectedPlan(plan.id)}
+                          className={cn(
+                            "rounded-xl border border-border bg-card p-4 text-left transition-colors",
+                            tooSmall ? "cursor-not-allowed opacity-50" : "hover:border-primary",
+                          )}
+                        >
+                          <p className="text-sm font-semibold">{plan.label}</p>
+                          <p className="mt-1 text-lg font-bold">
+                            {plan.price_cents === 0 ? "Free" : formatPrice(plan.price_cents, "usd")}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Up to {plan.capacity.toLocaleString()} people
+                          </p>
+                          {tooSmall && (
+                            <p className="mt-1 text-xs text-destructive">
+                              Too small for your event types
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

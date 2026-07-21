@@ -26,6 +26,19 @@ export function clearToken(): void {
 
 // ─── Core fetch wrapper ───────────────────────────────────────────────────────
 
+/** Thrown on any non-2xx API response. `code` is an optional machine-readable
+ * error identifier some endpoints return alongside the human-readable
+ * message (e.g. "full" for a capacity error) — see individual API methods
+ * for which codes they can produce. */
+export class ApiError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+  }
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -47,7 +60,7 @@ async function request<T>(
   const json = text ? JSON.parse(text) : {};
 
   if (!res.ok) {
-    throw new Error(json.error ?? `API error ${res.status}`);
+    throw new ApiError(json.error ?? `API error ${res.status}`, json.code);
   }
 
   return json as T;
@@ -309,15 +322,11 @@ export const registrationsApi = {
     return api.get<{ registrations: ApiRegistration[] }>("/registrations");
   },
 
+  // Organizer-only — the count of participants for one of *their* events.
+  // For public capacity display, use the event's own `registrations_count`
+  // (returned by eventsApi.get, no auth required) instead.
   forEvent(eventId: string) {
     return api.get<{ registrations: ApiRegistration[] }>(`/events/${eventId}/registrations`);
-  },
-
-  registrationCount(eventId: string) {
-    return api
-      .get<{ registrations: ApiRegistration[] }>(`/events/${eventId}/registrations`)
-      .then((r) => r.registrations.length)
-      .catch(() => 0);
   },
 
   create(eventId: string, opts?: { answers?: ApiRegistrationAnswer[]; eventTypeIds?: string[] }) {

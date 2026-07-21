@@ -32,6 +32,9 @@ class Event < ApplicationRecord
   validates :price_cents, numericality: { greater_than_or_equal_to: 0 }
   validates :plan, inclusion: { in: PLANS.keys }, allow_nil: true
   validate :end_after_start
+  # Only meaningful once a plan has actually set a capacity — a draft event
+  # with types but no plan yet (capacity nil) isn't constrained by this.
+  validate :capacity_covers_event_types, if: -> { capacity.present? }
 
   before_validation :default_price_cents
 
@@ -40,6 +43,14 @@ class Event < ApplicationRecord
 
   def plan_details
     PLANS[plan]
+  end
+
+  # Sum of each event type's own capacity — the most people who could
+  # register across all types combined. Types with no capacity of their own
+  # (unlimited) don't contribute a number here, since they have no explicit
+  # limit to add up.
+  def combined_event_type_capacity
+    event_types.filter_map(&:capacity).sum
   end
 
   private
@@ -51,5 +62,12 @@ class Event < ApplicationRecord
   def end_after_start
     return unless end_at && start_at
     errors.add(:end_at, "must be after start time") if end_at <= start_at
+  end
+
+  def capacity_covers_event_types
+    total = combined_event_type_capacity
+    return if total <= capacity
+    errors.add(:capacity,
+      "must be at least #{total} to cover the combined limit across all event types (currently #{total})")
   end
 end

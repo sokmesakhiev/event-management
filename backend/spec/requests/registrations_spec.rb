@@ -73,7 +73,7 @@ RSpec.describe "Registrations API", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
     end
 
-    it "returns 422 when the event is full" do
+    it "returns 422 with a clean message and code when the event is full" do
       full_event = create(:event, capacity: 1, creator: organizer)
       create(:registration, event: full_event)
 
@@ -82,6 +82,36 @@ RSpec.describe "Registrations API", type: :request do
            as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["error"]).to eq("This event is full")
+      expect(json["code"]).to eq("full")
+    end
+
+    it "returns 422 with a clean message and code when the selected event type is full" do
+      typed_event = create(:event, creator: organizer)
+      full_type = typed_event.event_types.create!(name: "5K", capacity: 1, position: 0)
+      create(:registration, event: typed_event).registration_event_types.create!(event_type: full_type)
+
+      post "/api/v1/events/#{typed_event.id}/registrations",
+           params: { event_type_ids: [ full_type.id ] },
+           headers: auth_headers(participant),
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["error"]).to eq("5K is full")
+      expect(json["code"]).to eq("full")
+    end
+
+    it "does not set a code for non-capacity failures" do
+      post "/api/v1/events/#{event.id}/registrations",
+           headers: auth_headers(participant),
+           as: :json
+      post "/api/v1/events/#{event.id}/registrations",
+           headers: auth_headers(participant),
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["error"]).to eq("Already registered")
+      expect(json["code"]).to be_nil
     end
 
     it "returns 401 without a token" do
