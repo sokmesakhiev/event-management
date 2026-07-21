@@ -66,10 +66,6 @@ export function SiteHeader() {
 
           {user ? (
             <>
-              <Button asChild variant="hero" size="sm" className="hidden sm:inline-flex">
-                <Link to="/dashboard">{t("header.dashboard")}</Link>
-              </Button>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2 pl-2">
