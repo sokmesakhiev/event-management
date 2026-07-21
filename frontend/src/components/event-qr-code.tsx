@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 interface EventQRCodeProps {
@@ -18,6 +19,7 @@ export function EventQRCode({
   size = 240,
   compact = false,
 }: EventQRCodeProps) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
@@ -60,16 +62,16 @@ export function EventQRCode({
       {!compact && (
         <>
           <p className="text-center text-xs text-muted-foreground">
-            Scan to register for this event
+            {t("eventQrCode.scanToRegister")}
           </p>
           <Button variant="outline" size="sm" onClick={download} disabled={!dataUrl}>
-            <Download className="h-4 w-4" /> Download QR
+            <Download className="h-4 w-4" /> {t("eventQrCode.downloadQr")}
           </Button>
         </>
       )}
       {compact && (
         <Button variant="ghost" size="sm" onClick={download} disabled={!dataUrl}>
-          <Download className="h-4 w-4" /> Download
+          <Download className="h-4 w-4" /> {t("common.download")}
         </Button>
       )}
     </div>

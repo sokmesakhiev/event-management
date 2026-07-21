@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Activity,
   Bike,
@@ -40,52 +41,26 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const features = [
-  {
-    icon: CalendarCheck,
-    title: "Set up in minutes",
-    desc: "Create an event with date, route, capacity and pricing through a guided flow.",
-  },
-  {
-    icon: Ticket,
-    title: "Registrations & tickets",
-    desc: "Free or paid sign-ups with capacity limits, waitlists and instant confirmations.",
-  },
-  {
-    icon: MapPin,
-    title: "Routes & maps",
-    desc: "Share start points, distances and elevation so participants know what to expect.",
-  },
-  {
-    icon: Bell,
-    title: "Updates that land",
-    desc: "Notify everyone about schedule changes, weather, or last-minute details.",
-  },
-  {
-    icon: BarChart3,
-    title: "Live dashboard",
-    desc: "Track sign-ups and attendance in real time from one clean overview.",
-  },
-  {
-    icon: Trophy,
-    title: "Results & community",
-    desc: "Post results, celebrate finishers, and keep your people coming back.",
-  },
-];
+const FEATURE_ITEMS = [
+  { icon: CalendarCheck, key: "setup" },
+  { icon: Ticket, key: "registrations" },
+  { icon: MapPin, key: "routes" },
+  { icon: Bell, key: "updates" },
+  { icon: BarChart3, key: "dashboard" },
+  { icon: Trophy, key: "results" },
+] as const;
 
-const eventTypes = [
-  { icon: Activity, label: "Running races", note: "5K, 10K, half & full marathons" },
-  { icon: Bike, label: "Group rides", note: "Casual spins to century challenges" },
-  { icon: Users, label: "Community gatherings", note: "Meetups, clinics & social runs" },
-];
+const EVENT_TYPE_ITEMS = [
+  { icon: Activity, key: "running" },
+  { icon: Bike, key: "rides" },
+  { icon: Users, key: "gatherings" },
+] as const;
 
-const steps = [
-  { n: "01", title: "Create your event", desc: "Add details, route and registration settings." },
-  { n: "02", title: "Share the link", desc: "Promote it and let people sign up in seconds." },
-  { n: "03", title: "Run the day", desc: "Manage check-ins, updates and results in one place." },
-];
+const STEP_ITEMS = ["create", "share", "run"] as const;
 
 function Index() {
+  const { t } = useTranslation();
+
   const plansQuery = useQuery({
     queryKey: ["event-plans"],
     queryFn: async () => {
@@ -103,7 +78,7 @@ function Index() {
         <div className="absolute inset-0">
           <img
             src={heroImg}
-            alt="Runners racing along a coastal road at dawn"
+            alt={t("home.hero.imageAlt")}
             width={1600}
             height={1200}
             className="h-full w-full object-cover"
@@ -116,38 +91,36 @@ function Index() {
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              Event management for movers
+              {t("home.hero.eyebrow")}
             </span>
             <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.05] md:text-7xl">
-              Bring people <span className="text-gradient">together</span>, one event at a time.
+              {t("home.hero.titlePrefix")}{" "}
+              <span className="text-gradient">{t("home.hero.titleHighlight")}</span>
+              {t("home.hero.titleSuffix")}
             </h1>
-            <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-              Rally is the easiest way to organize running races, group rides and community
-              gatherings. Set up an event, open registrations and manage the whole day from a single
-              dashboard.
-            </p>
+            <p className="mt-6 max-w-xl text-lg text-muted-foreground">{t("home.hero.subtitle")}</p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Button asChild variant="hero" size="xl">
                 <Link to="/auth">
-                  Get started free <ArrowRight className="h-4 w-4" />
+                  {t("home.hero.ctaPrimary")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="xl">
-                <a href="#how">See how it works</a>
+                <a href="#how">{t("home.hero.ctaSecondary")}</a>
               </Button>
             </div>
             <div className="mt-10 flex flex-wrap gap-8 text-sm text-muted-foreground">
               <div>
                 <p className="font-display text-2xl font-bold text-foreground">12k+</p>
-                <p>events hosted</p>
+                <p>{t("home.hero.statEvents")}</p>
               </div>
               <div>
                 <p className="font-display text-2xl font-bold text-foreground">480k</p>
-                <p>participants</p>
+                <p>{t("home.hero.statParticipants")}</p>
               </div>
               <div>
                 <p className="font-display text-2xl font-bold text-foreground">4.9★</p>
-                <p>organizer rating</p>
+                <p>{t("home.hero.statRating")}</p>
               </div>
             </div>
           </div>
@@ -158,23 +131,27 @@ function Index() {
       <section id="events" className="mx-auto max-w-6xl px-5 py-20">
         <div className="text-center">
           <h2 className="font-display text-3xl font-bold md:text-4xl">
-            Built for every kind of gathering
+            {t("home.eventTypes.title")}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Whether it's a competitive race or a relaxed weekend meetup, Rally has you covered.
+            {t("home.eventTypes.subtitle")}
           </p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {eventTypes.map((t) => (
+          {EVENT_TYPE_ITEMS.map((item) => (
             <div
-              key={t.label}
+              key={item.key}
               className="group rounded-2xl border border-border bg-card p-8 shadow-[var(--shadow-card)] transition-transform hover:-translate-y-1"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-secondary">
-                <t.icon className="h-6 w-6" />
+                <item.icon className="h-6 w-6" />
               </span>
-              <h3 className="mt-5 text-xl font-semibold">{t.label}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{t.note}</p>
+              <h3 className="mt-5 text-xl font-semibold">
+                {t(`home.eventTypes.items.${item.key}.label`)}
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t(`home.eventTypes.items.${item.key}.note`)}
+              </p>
             </div>
           ))}
         </div>
@@ -185,21 +162,22 @@ function Index() {
         <div className="mx-auto max-w-6xl px-5 py-20">
           <div className="max-w-2xl">
             <h2 className="font-display text-3xl font-bold md:text-4xl">
-              Everything you need to run a great event
+              {t("home.features.title")}
             </h2>
-            <p className="mt-3 text-muted-foreground">
-              From the first registration to the finish line, Rally handles the logistics so you can
-              focus on the experience.
-            </p>
+            <p className="mt-3 text-muted-foreground">{t("home.features.subtitle")}</p>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((f) => (
-              <div key={f.title} className="rounded-2xl border border-border bg-background p-6">
+            {FEATURE_ITEMS.map((item) => (
+              <div key={item.key} className="rounded-2xl border border-border bg-background p-6">
                 <span className="flex h-11 w-11 items-center justify-center rounded-lg [background-image:var(--gradient-hero)] text-primary-foreground">
-                  <f.icon className="h-5 w-5" />
+                  <item.icon className="h-5 w-5" />
                 </span>
-                <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
+                <h3 className="mt-4 text-lg font-semibold">
+                  {t(`home.features.items.${item.key}.title`)}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {t(`home.features.items.${item.key}.desc`)}
+                </p>
               </div>
             ))}
           </div>
@@ -209,17 +187,16 @@ function Index() {
       {/* Pricing */}
       <section id="pricing" className="mx-auto max-w-6xl px-5 py-20">
         <div className="text-center">
-          <h2 className="font-display text-3xl font-bold md:text-4xl">
-            Simple, transparent pricing
-          </h2>
+          <h2 className="font-display text-3xl font-bold md:text-4xl">{t("home.pricing.title")}</h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Every event starts as a free draft. When you're ready to open registrations, pick a plan
-            based on how many people you expect — that's what you pay to publish.
+            {t("home.pricing.subtitle")}
           </p>
         </div>
 
         {plansQuery.isLoading && (
-          <p className="mt-12 text-center text-sm text-muted-foreground">Loading plans…</p>
+          <p className="mt-12 text-center text-sm text-muted-foreground">
+            {t("home.pricing.loading")}
+          </p>
         )}
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
@@ -234,24 +211,29 @@ function Index() {
               >
                 {isFree && (
                   <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
-                    Start here
+                    {t("home.pricing.startHere")}
                   </span>
                 )}
                 <h3 className="text-lg font-semibold">{plan.label}</h3>
                 <p className="mt-2 font-display text-3xl font-bold">
-                  {isFree ? "Free" : formatPrice(plan.price_cents, "usd")}
+                  {isFree ? t("common.free") : formatPrice(plan.price_cents, "usd")}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">per published event</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t("home.pricing.perEvent")}</p>
                 <div className="mt-5 flex items-start gap-2 text-sm">
                   <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-                  <span>Up to {plan.capacity.toLocaleString()} registrants</span>
+                  <span>
+                    {t("home.pricing.registrantsUpTo", {
+                      count: plan.capacity,
+                      formatted: plan.capacity.toLocaleString(),
+                    })}
+                  </span>
                 </div>
                 <div className="mt-2 flex items-start gap-2 text-sm">
                   <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-                  <span>Full dashboard, branding & QR code</span>
+                  <span>{t("home.pricing.dashboardFeature")}</span>
                 </div>
                 <Button asChild variant={isFree ? "hero" : "outline"} size="sm" className="mt-6">
-                  <Link to="/auth">Get started</Link>
+                  <Link to="/auth">{t("home.pricing.getStarted")}</Link>
                 </Button>
               </div>
             );
@@ -262,17 +244,19 @@ function Index() {
       {/* How it works */}
       <section id="how" className="mx-auto max-w-6xl px-5 py-20">
         <div className="text-center">
-          <h2 className="font-display text-3xl font-bold md:text-4xl">How it works</h2>
-          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Go from idea to a fully managed event in three simple steps.
-          </p>
+          <h2 className="font-display text-3xl font-bold md:text-4xl">{t("home.how.title")}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">{t("home.how.subtitle")}</p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {steps.map((s) => (
-            <div key={s.n} className="relative rounded-2xl border border-border bg-card p-8">
-              <span className="font-display text-4xl font-bold text-gradient">{s.n}</span>
-              <h3 className="mt-4 text-xl font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
+          {STEP_ITEMS.map((key, i) => (
+            <div key={key} className="relative rounded-2xl border border-border bg-card p-8">
+              <span className="font-display text-4xl font-bold text-gradient">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <h3 className="mt-4 text-xl font-semibold">{t(`home.how.steps.${key}.title`)}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t(`home.how.steps.${key}.desc`)}
+              </p>
             </div>
           ))}
         </div>
@@ -282,10 +266,10 @@ function Index() {
       <section className="mx-auto max-w-6xl px-5 pb-24">
         <div className="overflow-hidden rounded-3xl border border-border p-10 text-center shadow-[var(--shadow-glow)] [background-image:var(--gradient-hero)] md:p-16">
           <h2 className="font-display text-3xl font-bold text-primary-foreground md:text-5xl">
-            Ready to rally your community?
+            {t("home.cta.title")}
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-primary-foreground/80">
-            Create your first event today. It's free to get started.
+            {t("home.cta.subtitle")}
           </p>
           <div className="mt-8">
             <Button
@@ -294,7 +278,7 @@ function Index() {
               className="bg-background text-foreground hover:bg-background/90"
             >
               <Link to="/auth">
-                Sign in to get started <ArrowRight className="h-4 w-4" />
+                {t("home.cta.button")} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -307,7 +291,7 @@ function Index() {
             <Activity className="h-4 w-4 text-primary" />
             <span className="font-display font-semibold text-foreground">Rally</span>
           </div>
-          <p>© {new Date().getFullYear()} Rally. Bring people together.</p>
+          <p>{t("home.footer.tagline", { year: new Date().getFullYear() })}</p>
         </div>
       </footer>
     </div>

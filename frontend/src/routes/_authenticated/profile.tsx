@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Loader2, Wallet, ShieldCheck, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { profileApi } from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
 import { SiteHeader } from "@/components/site-header";
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 });
 
 function ProfilePage() {
+  const { t } = useTranslation();
   const { user, refresh } = useAuth();
   const queryClient = useQueryClient();
 
@@ -57,9 +59,9 @@ function ProfilePage() {
       // Display name / avatar are also shown in the header — refresh the
       // auth user so it updates immediately instead of on next reload.
       refresh();
-      toast.success("Profile saved");
+      toast.success(t("profile.toastProfileSaved"));
     },
-    onError: (e: any) => toast.error(e.message ?? "Could not save your profile."),
+    onError: (e: any) => toast.error(e.message ?? t("profile.toastProfileSaveError")),
   });
 
   // ── PayWay credentials ──
@@ -79,9 +81,9 @@ function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       setApiKey("");
-      toast.success("Payment settings saved");
+      toast.success(t("profile.toastPaymentSaved"));
     },
-    onError: (e: any) => toast.error(e.message ?? "Could not save payment settings."),
+    onError: (e: any) => toast.error(e.message ?? t("profile.toastPaymentSaveError")),
   });
 
   const disconnectPayway = useMutation({
@@ -90,9 +92,9 @@ function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       setMerchantId("");
       setApiKey("");
-      toast.success("PayWay disconnected");
+      toast.success(t("profile.toastDisconnected"));
     },
-    onError: (e: any) => toast.error(e.message ?? "Could not disconnect PayWay."),
+    onError: (e: any) => toast.error(e.message ?? t("profile.toastDisconnectError")),
   });
 
   return (
@@ -100,21 +102,23 @@ function ProfilePage() {
       <SiteHeader />
       <main className="mx-auto max-w-2xl px-5 py-10">
         <div>
-          <h1 className="font-display text-3xl font-bold">Your profile</h1>
+          <h1 className="font-display text-3xl font-bold">{t("profile.title")}</h1>
           <p className="mt-1 text-muted-foreground">{user?.email}</p>
         </div>
 
-        {profileQuery.isLoading && <p className="mt-6 text-muted-foreground">Loading…</p>}
+        {profileQuery.isLoading && (
+          <p className="mt-6 text-muted-foreground">{t("common.loading")}</p>
+        )}
         {profileQuery.isError && (
           <div className="mt-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center">
-            <p className="font-medium text-destructive">Couldn't load your profile.</p>
+            <p className="font-medium text-destructive">{t("profile.loadError")}</p>
             <Button
               variant="outline"
               size="sm"
               className="mt-4"
               onClick={() => profileQuery.refetch()}
             >
-              Try again
+              {t("common.tryAgain")}
             </Button>
           </div>
         )}
@@ -124,32 +128,30 @@ function ProfilePage() {
             {/* Basic info */}
             <Card>
               <CardHeader>
-                <CardTitle>Basic info</CardTitle>
-                <CardDescription>
-                  This is what participants and other organizers see.
-                </CardDescription>
+                <CardTitle>{t("profile.basicInfoTitle")}</CardTitle>
+                <CardDescription>{t("profile.basicInfoDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
                 <ImageUpload
                   value={avatarUrl ?? null}
                   onChange={setAvatarUrl}
                   variant="avatar"
-                  label="Avatar"
+                  label={t("profile.avatar")}
                 />
                 <div className="space-y-2">
-                  <Label htmlFor="display-name">Display name</Label>
+                  <Label htmlFor="display-name">{t("profile.displayName")}</Label>
                   <Input
                     id="display-name"
                     value={displayName ?? ""}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={t("profile.displayNamePlaceholder")}
                   />
                 </div>
               </CardContent>
               <CardFooter>
                 <Button onClick={() => saveProfile.mutate()} disabled={saveProfile.isPending}>
                   {saveProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Save profile
+                  {t("profile.saveProfile")}
                 </Button>
               </CardFooter>
             </Card>
@@ -159,15 +161,15 @@ function ProfilePage() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Wallet className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle>Payment settings</CardTitle>
+                  <CardTitle>{t("header.paymentSettings")}</CardTitle>
                   {profile.payway_configured && (
                     <Badge variant="default" className="gap-1">
-                      <ShieldCheck className="h-3 w-3" /> Connected
+                      <ShieldCheck className="h-3 w-3" /> {t("profile.connected")}
                     </Badge>
                   )}
                 </div>
                 <CardDescription>
-                  Connect your own{" "}
+                  {t("profile.connectPrefix")}{" "}
                   <a
                     href="https://developer.payway.com.kh"
                     target="_blank"
@@ -177,24 +179,22 @@ function ProfilePage() {
                     ABA PayWay
                     <ExternalLink className="h-3 w-3" />
                   </a>{" "}
-                  merchant account so payments from people registering for your events go straight
-                  to you. Until you connect one, registration payments are collected through Rally's
-                  default account.
+                  {t("profile.connectSuffix")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="payway-merchant-id">Merchant ID</Label>
+                  <Label htmlFor="payway-merchant-id">{t("profile.merchantId")}</Label>
                   <Input
                     id="payway-merchant-id"
                     value={merchantId ?? ""}
                     onChange={(e) => setMerchantId(e.target.value)}
-                    placeholder="e.g. ec439175"
+                    placeholder={t("profile.merchantIdPlaceholder")}
                     autoComplete="off"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="payway-api-key">API key</Label>
+                  <Label htmlFor="payway-api-key">{t("profile.apiKey")}</Label>
                   <Input
                     id="payway-api-key"
                     type="password"
@@ -202,20 +202,20 @@ function ProfilePage() {
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder={
                       profile.payway_api_key_masked
-                        ? `Saved: ${profile.payway_api_key_masked} — leave blank to keep it`
-                        : "Paste your PayWay API key"
+                        ? t("profile.apiKeySavedPlaceholder", {
+                            masked: profile.payway_api_key_masked,
+                          })
+                        : t("profile.apiKeyPlaceholder")
                     }
                     autoComplete="off"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Stored encrypted. We never show the full key again once it's saved.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("profile.apiKeyNote")}</p>
                 </div>
               </CardContent>
               <CardFooter className="gap-2">
                 <Button onClick={() => savePayway.mutate()} disabled={savePayway.isPending}>
                   {savePayway.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Save payment settings
+                  {t("profile.savePaymentSettings")}
                 </Button>
                 {profile.payway_configured && (
                   <Button
@@ -224,7 +224,7 @@ function ProfilePage() {
                     disabled={disconnectPayway.isPending}
                   >
                     {disconnectPayway.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Disconnect
+                    {t("profile.disconnect")}
                   </Button>
                 )}
               </CardFooter>

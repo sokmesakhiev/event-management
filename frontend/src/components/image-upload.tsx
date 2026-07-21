@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Upload, X, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { uploadsApi } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ interface ImageUploadProps {
 }
 
 export function ImageUpload({ value, onChange, variant = "banner", label }: ImageUploadProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,7 @@ export function ImageUpload({ value, onChange, variant = "banner", label }: Imag
       const url = await uploadsApi.upload(file, variant);
       onChange(url);
     } catch (e: any) {
-      setError(e.message ?? "Upload failed");
+      setError(e.message ?? t("imageUpload.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -62,7 +64,11 @@ export function ImageUpload({ value, onChange, variant = "banner", label }: Imag
       >
         {value ? (
           <>
-            <img src={value} alt="Upload preview" className="h-full w-full object-cover" />
+            <img
+              src={value}
+              alt={t("imageUpload.previewAlt")}
+              className="h-full w-full object-cover"
+            />
             {/* Remove button */}
             <button
               type="button"
@@ -82,7 +88,7 @@ export function ImageUpload({ value, onChange, variant = "banner", label }: Imag
             ) : (
               <>
                 <Upload className="h-5 w-5" />
-                {!isLogo && <p className="text-xs">Click or drag to upload</p>}
+                {!isLogo && <p className="text-xs">{t("imageUpload.clickOrDrag")}</p>}
               </>
             )}
           </div>

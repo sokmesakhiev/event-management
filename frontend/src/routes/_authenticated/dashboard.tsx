@@ -10,6 +10,7 @@ import {
   Download,
   Ticket,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { registrationsApi, eventsApi } from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
 import { SiteHeader } from "@/components/site-header";
@@ -39,6 +40,7 @@ interface EventRow {
 }
 
 function Dashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [tab, setTab] = useState("participating");
 
@@ -60,14 +62,12 @@ function Dashboard() {
       <main className="mx-auto max-w-5xl px-5 py-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl font-bold">Your dashboard</h1>
-            <p className="mt-1 text-muted-foreground">
-              Manage the events you host and the ones you've joined.
-            </p>
+            <h1 className="font-display text-3xl font-bold">{t("dashboard.title")}</h1>
+            <p className="mt-1 text-muted-foreground">{t("dashboard.subtitle")}</p>
           </div>
           <Button asChild variant="hero">
             <Link to="/events/new">
-              <CalendarPlus className="h-4 w-4" /> Create event
+              <CalendarPlus className="h-4 w-4" /> {t("dashboard.createEvent")}
             </Link>
           </Button>
         </div>
@@ -75,28 +75,31 @@ function Dashboard() {
         <Tabs value={tab} onValueChange={setTab} className="mt-8">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="participating">
-              Participating
+              {t("dashboard.participating")}
               {participating.data ? ` (${participating.data.length})` : ""}
             </TabsTrigger>
             <TabsTrigger value="created">
-              Created{created.data ? ` (${created.data.length})` : ""}
+              {t("dashboard.created")}
+              {created.data ? ` (${created.data.length})` : ""}
             </TabsTrigger>
           </TabsList>
 
           {/* Participating */}
           <TabsContent value="participating" className="mt-6 space-y-4">
-            {participating.isLoading && <p className="text-muted-foreground">Loading…</p>}
+            {participating.isLoading && (
+              <p className="text-muted-foreground">{t("common.loading")}</p>
+            )}
             {participating.isError && (
-              <p className="text-sm text-destructive">Couldn't load your registrations.</p>
+              <p className="text-sm text-destructive">{t("dashboard.registrationsError")}</p>
             )}
             {participating.data?.length === 0 && (
               <EmptyState
                 icon={Ticket}
-                title="No events yet"
-                desc="Browse events and register to see them here."
+                title={t("dashboard.emptyParticipatingTitle")}
+                desc={t("dashboard.emptyParticipatingDesc")}
                 action={
                   <Button asChild variant="outline">
-                    <Link to="/events">Browse events</Link>
+                    <Link to="/events">{t("header.browseEvents")}</Link>
                   </Button>
                 }
               />
@@ -115,10 +118,10 @@ function Dashboard() {
                         <Badge variant="secondary">{categoryLabel(ev.category)}</Badge>
                         <Badge variant={reg.payment_status === "paid" ? "default" : "outline"}>
                           {ev.price_cents === 0
-                            ? "Free"
+                            ? t("common.free")
                             : reg.payment_status === "paid"
-                              ? "Paid"
-                              : "Payment due"}
+                              ? t("dashboard.paid")
+                              : t("dashboard.paymentDue")}
                         </Badge>
                       </div>
                       <h3 className="mt-2 text-lg font-semibold">{ev.title}</h3>
@@ -134,12 +137,12 @@ function Dashboard() {
                     {reg.payment_status === "unpaid" ? (
                       <Button asChild size="sm">
                         <Link to="/events/$eventId" params={{ eventId: ev.id }}>
-                          Complete payment
+                          {t("dashboard.completePayment")}
                         </Link>
                       </Button>
                     ) : (
                       <Button variant="outline" size="sm" onClick={() => downloadICS(ev)}>
-                        <Download className="h-4 w-4" /> Add to calendar
+                        <Download className="h-4 w-4" /> {t("eventDetail.addToCalendar")}
                       </Button>
                     )}
                   </div>
@@ -150,21 +153,18 @@ function Dashboard() {
 
           {/* Created */}
           <TabsContent value="created" className="mt-6 space-y-4">
-            {created.isLoading && <p className="text-muted-foreground">Loading…</p>}
+            {created.isLoading && <p className="text-muted-foreground">{t("common.loading")}</p>}
             {created.isError && (
-              <p className="text-sm text-destructive">
-                Couldn't load your events. Check that the backend is running and up to date
-                (pending migrations?), then refresh.
-              </p>
+              <p className="text-sm text-destructive">{t("dashboard.eventsError")}</p>
             )}
             {created.data?.length === 0 && (
               <EmptyState
                 icon={CalendarPlus}
-                title="No events created"
-                desc="Host your first race, ride or gathering."
+                title={t("dashboard.emptyCreatedTitle")}
+                desc={t("dashboard.emptyCreatedDesc")}
                 action={
                   <Button asChild variant="hero">
-                    <Link to="/events/new">Create event</Link>
+                    <Link to="/events/new">{t("dashboard.createEvent")}</Link>
                   </Button>
                 }
               />
@@ -180,7 +180,7 @@ function Dashboard() {
                     <div>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary">{categoryLabel(ev.category)}</Badge>
-                        {!ev.is_published && <Badge variant="outline">Draft</Badge>}
+                        {!ev.is_published && <Badge variant="outline">{t("common.draft")}</Badge>}
                         <Badge variant="outline">{formatPrice(ev.price_cents, ev.currency)}</Badge>
                       </div>
                       <h3 className="mt-2 text-lg font-semibold">{ev.title}</h3>
@@ -188,13 +188,18 @@ function Dashboard() {
                         <CalendarDays className="h-4 w-4" /> {formatDateTime(ev.start_at)}
                       </p>
                       <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" /> {count}
-                        {ev.capacity ? ` / ${ev.capacity}` : ""} participants
+                        <Users className="h-4 w-4" />{" "}
+                        {ev.capacity
+                          ? t("dashboard.participantsWithCapacity", {
+                              count,
+                              capacity: ev.capacity,
+                            })
+                          : t("dashboard.participantsNoCapacity", { count })}
                       </p>
                     </div>
                     <Button asChild variant="outline" size="sm">
                       <Link to="/dashboard/events/$eventId" params={{ eventId: ev.id }}>
-                        <Settings className="h-4 w-4" /> Manage
+                        <Settings className="h-4 w-4" /> {t("dashboard.manage")}
                       </Link>
                     </Button>
                   </div>

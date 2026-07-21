@@ -1,13 +1,15 @@
+import i18n from "@/lib/i18n";
+
 export function formatPrice(cents: number, currency = "usd"): string {
-  if (!cents) return "Free";
-  return new Intl.NumberFormat("en-US", {
+  if (!cents) return i18n.t("common.free");
+  return new Intl.NumberFormat(i18n.language, {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(cents / 100);
 }
 
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString(i18n.language, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -18,22 +20,37 @@ export function formatDateTime(iso: string): string {
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(i18n.language, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
-export const EVENT_CATEGORIES = [
-  { value: "running", label: "Running" },
-  { value: "cycling", label: "Cycling" },
-  { value: "swimming", label: "Swimming" },
-  { value: "triathlon", label: "Triathlon" },
-  { value: "hiking", label: "Hiking" },
-  { value: "other", label: "Other" },
+export const EVENT_CATEGORY_VALUES = [
+  "running",
+  "cycling",
+  "swimming",
+  "triathlon",
+  "hiking",
+  "other",
 ] as const;
 
+export type EventCategoryValue = (typeof EVENT_CATEGORY_VALUES)[number];
+
+/** Translated {value, label} pairs for rendering a category picker. Call
+ * this inside a component render (not at module scope) so it re-computes
+ * when the language changes. */
+export function eventCategoryOptions(): { value: EventCategoryValue; label: string }[] {
+  return EVENT_CATEGORY_VALUES.map((value) => ({
+    value,
+    label: i18n.t(`eventCategories.${value}`),
+  }));
+}
+
 export function categoryLabel(value: string): string {
-  return EVENT_CATEGORIES.find((c) => c.value === value)?.label ?? "Event";
+  if ((EVENT_CATEGORY_VALUES as readonly string[]).includes(value)) {
+    return i18n.t(`eventCategories.${value}`);
+  }
+  return i18n.t("eventCategories.event");
 }

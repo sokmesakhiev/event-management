@@ -4,6 +4,7 @@
  */
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,13 +19,8 @@ interface SurveyFormProps {
   isPending: boolean;
 }
 
-export function SurveyForm({
-  survey,
-  brandColor,
-  onSubmit,
-  onBack,
-  isPending,
-}: SurveyFormProps) {
+export function SurveyForm({ survey, brandColor, onSubmit, onBack, isPending }: SurveyFormProps) {
+  const { t } = useTranslation();
   // answers keyed by question id
   const [textAnswers, setTextAnswers] = useState<Record<string, string>>({});
   const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string[]>>({});
@@ -53,23 +49,22 @@ export function SurveyForm({
     for (const q of survey.questions) {
       if (!q.required) continue;
       if (q.question_type === "text" && !textAnswers[q.id]?.trim()) {
-        alert(`Please answer: "${q.question_text}"`);
+        alert(t("surveyForm.requiredAlert", { question: q.question_text }));
         return;
       }
       if (
         (q.question_type === "single_choice" || q.question_type === "multiple_choice") &&
         !choiceAnswers[q.id]?.length
       ) {
-        alert(`Please answer: "${q.question_text}"`);
+        alert(t("surveyForm.requiredAlert", { question: q.question_text }));
         return;
       }
     }
 
     const answers: ApiRegistrationAnswer[] = survey.questions.map((q) => ({
       survey_question_id: q.id,
-      answer_text: q.question_type === "text" ? textAnswers[q.id] ?? "" : undefined,
-      answer_options:
-        q.question_type !== "text" ? (choiceAnswers[q.id] ?? []) : undefined,
+      answer_text: q.question_type === "text" ? (textAnswers[q.id] ?? "") : undefined,
+      answer_options: q.question_type !== "text" ? (choiceAnswers[q.id] ?? []) : undefined,
     }));
 
     onSubmit(answers);
@@ -79,9 +74,7 @@ export function SurveyForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <h3 className="font-semibold text-lg">{survey.title}</h3>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Please answer the questions below to complete your registration.
-        </p>
+        <p className="text-sm text-muted-foreground mt-0.5">{t("surveyForm.subtitle")}</p>
       </div>
 
       {survey.questions.map((q, i) => (
@@ -94,17 +87,14 @@ export function SurveyForm({
           {q.question_type === "text" && (
             <Textarea
               value={textAnswers[q.id] ?? ""}
-              onChange={(e) =>
-                setTextAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-              }
-              placeholder="Your answer…"
+              onChange={(e) => setTextAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+              placeholder={t("surveyForm.answerPlaceholder")}
               rows={3}
               className="resize-none"
             />
           )}
 
-          {(q.question_type === "single_choice" ||
-            q.question_type === "multiple_choice") && (
+          {(q.question_type === "single_choice" || q.question_type === "multiple_choice") && (
             <div className="space-y-2 pl-1">
               {q.options.map((opt) => {
                 const selected = (choiceAnswers[q.id] ?? []).includes(opt.id);
@@ -147,7 +137,7 @@ export function SurveyForm({
 
       <div className="flex gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onBack} disabled={isPending}>
-          Back
+          {t("common.back")}
         </Button>
         <Button
           type="submit"
@@ -156,7 +146,7 @@ export function SurveyForm({
           className="flex-1 text-white hover:opacity-90 disabled:opacity-50"
         >
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          Complete registration
+          {t("surveyForm.completeRegistration")}
         </Button>
       </div>
     </form>

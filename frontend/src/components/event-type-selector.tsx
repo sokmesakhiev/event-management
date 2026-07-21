@@ -4,10 +4,11 @@
  * Supports multi-select (participants can register for more than one type).
  */
 import { Loader2, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { formatPrice } from "@/lib/event-utils";
 import type { ApiEventType } from "@/lib/api-client";
 
 interface EventTypeSelectorProps {
@@ -25,15 +26,6 @@ interface EventTypeSelectorProps {
   nextLabel?: string;
 }
 
-function formatCents(cents: number, currency: string) {
-  if (cents === 0) return "Free";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 2,
-  }).format(cents / 100);
-}
-
 export function EventTypeSelector({
   eventTypes,
   eventPriceCents,
@@ -44,12 +36,13 @@ export function EventTypeSelector({
   onBack,
   brandColor,
   isPending,
-  nextLabel = "Next",
+  nextLabel,
 }: EventTypeSelectorProps) {
+  const { t } = useTranslation();
   const total = selectedIds.reduce((sum, id) => {
-    const t = eventTypes.find((et) => et.id === id);
-    if (!t) return sum;
-    return sum + (t.price_cents ?? eventPriceCents);
+    const et = eventTypes.find((x) => x.id === id);
+    if (!et) return sum;
+    return sum + (et.price_cents ?? eventPriceCents);
   }, 0);
 
   const canProceed = selectedIds.length > 0;
@@ -57,10 +50,8 @@ export function EventTypeSelector({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-semibold text-lg">Choose your type(s)</h3>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Select one or more options to register for.
-        </p>
+        <h3 className="font-semibold text-lg">{t("eventTypeSelector.title")}</h3>
+        <p className="text-sm text-muted-foreground mt-0.5">{t("eventTypeSelector.subtitle")}</p>
       </div>
 
       <div className="space-y-2">
@@ -76,10 +67,14 @@ export function EventTypeSelector({
                 isFull
                   ? "opacity-50 cursor-not-allowed border-border"
                   : selected
-                  ? "border-[var(--brand)]"
-                  : "border-border hover:border-muted-foreground/40"
+                    ? "border-[var(--brand)]"
+                    : "border-border hover:border-muted-foreground/40"
               }`}
-              style={selected && !isFull ? { borderColor: brandColor, backgroundColor: `${brandColor}0d` } : {}}
+              style={
+                selected && !isFull
+                  ? { borderColor: brandColor, backgroundColor: `${brandColor}0d` }
+                  : {}
+              }
             >
               <Checkbox
                 id={`type-${et.id}`}
@@ -91,11 +86,12 @@ export function EventTypeSelector({
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{et.name}</span>
-                  <Badge variant="outline">{formatCents(priceCents, currency)}</Badge>
-                  {isFull && <Badge variant="secondary">Full</Badge>}
+                  <Badge variant="outline">{formatPrice(priceCents, currency)}</Badge>
+                  {isFull && <Badge variant="secondary">{t("eventDetail.full")}</Badge>}
                   {!isFull && et.spots_remaining !== null && (
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Users className="h-3 w-3" /> {et.spots_remaining} spot{et.spots_remaining !== 1 ? "s" : ""} left
+                      <Users className="h-3 w-3" />{" "}
+                      {t("eventTypeSelector.spotsLeft", { count: et.spots_remaining })}
                     </span>
                   )}
                 </div>
@@ -112,15 +108,17 @@ export function EventTypeSelector({
       {selectedIds.length > 0 && (
         <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-2.5 text-sm">
           <span className="text-muted-foreground">
-            {selectedIds.length} type{selectedIds.length !== 1 ? "s" : ""} selected
+            {t("eventTypeSelector.typesSelected", { count: selectedIds.length })}
           </span>
-          <span className="font-semibold">{formatCents(total, currency)} total</span>
+          <span className="font-semibold">
+            {t("eventTypeSelector.total", { amount: formatPrice(total, currency) })}
+          </span>
         </div>
       )}
 
       <div className="flex gap-3 pt-1">
         <Button type="button" variant="outline" onClick={onBack}>
-          Back
+          {t("common.back")}
         </Button>
         <Button
           type="button"
@@ -130,7 +128,7 @@ export function EventTypeSelector({
           className="flex-1 text-white hover:opacity-90 disabled:opacity-50"
         >
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          {nextLabel}
+          {nextLabel ?? t("eventTypeSelector.next")}
         </Button>
       </div>
     </div>

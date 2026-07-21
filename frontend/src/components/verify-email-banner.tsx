@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/use-auth";
 import { emailVerificationsApi } from "@/lib/api-client";
 
 export function VerifyEmailBanner() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -17,9 +19,9 @@ export function VerifyEmailBanner() {
     try {
       await emailVerificationsApi.resend();
       setSent(true);
-      toast.success("Verification email sent — check your inbox.");
+      toast.success(t("verifyEmailBanner.sentToast"));
     } catch (e: any) {
-      toast.error(e.message ?? "Could not send verification email");
+      toast.error(e.message ?? t("verifyEmailBanner.sendError"));
     } finally {
       setSending(false);
     }
@@ -28,7 +30,7 @@ export function VerifyEmailBanner() {
   return (
     <div className="flex flex-wrap items-center justify-center gap-3 bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-700 dark:text-amber-400">
       <span className="flex items-center gap-1.5">
-        <Mail className="h-4 w-4" /> Please verify your email address ({user.email}).
+        <Mail className="h-4 w-4" /> {t("verifyEmailBanner.message", { email: user.email })}
       </span>
       <Button
         size="sm"
@@ -38,7 +40,7 @@ export function VerifyEmailBanner() {
         disabled={sending || sent}
       >
         {sending && <Loader2 className="h-3 w-3 animate-spin" />}
-        {sent ? "Sent" : "Resend email"}
+        {sent ? t("verifyEmailBanner.sent") : t("verifyEmailBanner.resend")}
       </Button>
     </div>
   );

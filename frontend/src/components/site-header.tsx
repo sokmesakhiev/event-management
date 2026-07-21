@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, LogOut, User, Wallet } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -10,14 +11,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { useAuth } from "@/lib/use-auth";
 import { VerifyEmailBanner } from "@/components/verify-email-banner";
 
 export function SiteHeader() {
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const greetingName = user?.display_name?.trim() || user?.email.split("@")[0] || "there";
+  const greetingName =
+    user?.display_name?.trim() || user?.email.split("@")[0] || t("header.fallbackName");
   const initials = greetingName.slice(0, 2).toUpperCase();
 
   return (
@@ -27,7 +31,7 @@ export function SiteHeader() {
         <Link to="/" className="flex items-center gap-2">
           <img
             src="/src/assets/logo.png"
-            alt="Rails Dev"
+            alt={t("common.rallyLogoAlt")}
             className="relative h-16 cursor-pointer"
           />
 
@@ -36,32 +40,34 @@ export function SiteHeader() {
 
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <Link to="/events" className="transition-colors hover:text-foreground">
-            Browse events
+            {t("header.browseEvents")}
           </Link>
           {user ? (
             <Link to="/dashboard" className="transition-colors hover:text-foreground">
-              Dashboard
+              {t("header.dashboard")}
             </Link>
           ) : (
             <>
               <a href="/#features" className="transition-colors hover:text-foreground">
-                Features
+                {t("header.features")}
               </a>
               <a href="/#pricing" className="transition-colors hover:text-foreground">
-                Pricing
+                {t("header.pricing")}
               </a>
               <a href="/#how" className="transition-colors hover:text-foreground">
-                How it works
+                {t("header.howItWorks")}
               </a>
             </>
           )}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+
           {user ? (
             <>
               <Button asChild variant="hero" size="sm" className="hidden sm:inline-flex">
-                <Link to="/dashboard">Dashboard</Link>
+                <Link to="/dashboard">{t("header.dashboard")}</Link>
               </Button>
 
               <DropdownMenu>
@@ -72,7 +78,7 @@ export function SiteHeader() {
                       <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
                     </Avatar>
                     <span className="hidden max-w-[9rem] truncate sm:inline">
-                      Welcome, {greetingName}
+                      {t("header.welcome", { name: greetingName })}
                     </span>
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
@@ -85,12 +91,12 @@ export function SiteHeader() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="cursor-pointer">
-                      <User className="h-4 w-4" /> Edit profile
+                      <User className="h-4 w-4" /> {t("header.editProfile")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/profile" hash="payment-settings" className="cursor-pointer">
-                      <Wallet className="h-4 w-4" /> Payment settings
+                      <Wallet className="h-4 w-4" /> {t("header.paymentSettings")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -98,7 +104,7 @@ export function SiteHeader() {
                     onClick={() => signOut()}
                     className="cursor-pointer text-destructive focus:text-destructive"
                   >
-                    <LogOut className="h-4 w-4" /> Sign out
+                    <LogOut className="h-4 w-4" /> {t("common.signOut")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -106,7 +112,7 @@ export function SiteHeader() {
           ) : (
             pathname !== "/auth" && (
               <Button asChild variant="hero" size="sm">
-                <Link to="/auth">Sign in</Link>
+                <Link to="/auth">{t("common.signIn")}</Link>
               </Button>
             )
           )}

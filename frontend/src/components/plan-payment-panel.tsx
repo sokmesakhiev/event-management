@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import { Loader2, Smartphone, RefreshCw, Check, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { eventPlanPaymentsApi, type ApiEventPlanPayment } from "@/lib/api-client";
 import { formatPrice } from "@/lib/event-utils";
@@ -38,6 +39,7 @@ export function PlanPaymentPanel({
   brandColor = "#6366f1",
   onPublished,
 }: PlanPaymentPanelProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [planPaymentId, setPlanPaymentId] = useState<string | null>(null);
@@ -109,8 +111,8 @@ export function PlanPaymentPanel({
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
           <Check className="h-5 w-5" style={{ color: brandColor }} />
         </span>
-        <p className="font-medium">Event published!</p>
-        <p className="text-sm text-muted-foreground">It's now visible on the public events page.</p>
+        <p className="font-medium">{t("planPaymentPanel.eventPublished")}</p>
+        <p className="text-sm text-muted-foreground">{t("planPaymentPanel.nowVisible")}</p>
       </div>
     );
   }
@@ -119,7 +121,7 @@ export function PlanPaymentPanel({
     return (
       <div className="flex flex-col items-center gap-3 py-8">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Preparing your plan…</p>
+        <p className="text-sm text-muted-foreground">{t("planPaymentPanel.preparingPlan")}</p>
       </div>
     );
   }
@@ -129,10 +131,10 @@ export function PlanPaymentPanel({
       <div className="flex flex-col items-center gap-3 py-6 text-center">
         <AlertCircle className="h-6 w-6 text-destructive" />
         <p className="text-sm text-muted-foreground">
-          {(startPublish.error as any)?.message ?? "Could not start this plan."}
+          {(startPublish.error as any)?.message ?? t("planPaymentPanel.startError")}
         </p>
         <Button variant="outline" size="sm" onClick={regenerate}>
-          <RefreshCw className="h-4 w-4" /> Try again
+          <RefreshCw className="h-4 w-4" /> {t("common.tryAgain")}
         </Button>
       </div>
     );
@@ -146,9 +148,11 @@ export function PlanPaymentPanel({
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
           <Check className="h-5 w-5" style={{ color: brandColor }} />
         </span>
-        <p className="font-medium">Payment received — event published!</p>
+        <p className="font-medium">{t("planPaymentPanel.paymentReceived")}</p>
         <p className="text-sm text-muted-foreground">
-          {formatPrice(payment.amount_cents, payment.currency)} paid.
+          {t("planPaymentPanel.paidMessage", {
+            amount: formatPrice(payment.amount_cents, payment.currency),
+          })}
         </p>
       </div>
     );
@@ -157,9 +161,9 @@ export function PlanPaymentPanel({
   if (payment.status === "expired" || (payment.status === "pending" && remaining === 0)) {
     return (
       <div className="flex flex-col items-center gap-3 py-6 text-center">
-        <p className="text-sm text-muted-foreground">This QR code has expired.</p>
+        <p className="text-sm text-muted-foreground">{t("paymentPanel.qrExpired")}</p>
         <Button variant="outline" size="sm" onClick={regenerate}>
-          <RefreshCw className="h-4 w-4" /> Generate a new QR code
+          <RefreshCw className="h-4 w-4" /> {t("paymentPanel.generateNewQr")}
         </Button>
       </div>
     );
@@ -170,10 +174,12 @@ export function PlanPaymentPanel({
       <div className="flex flex-col items-center gap-3 py-6 text-center">
         <AlertCircle className="h-6 w-6 text-destructive" />
         <p className="text-sm text-muted-foreground">
-          This payment was {payment.status}. You can try again.
+          {t("paymentPanel.paymentStatusMessage", {
+            status: t(`paymentPanel.status.${payment.status}`),
+          })}
         </p>
         <Button variant="outline" size="sm" onClick={regenerate}>
-          <RefreshCw className="h-4 w-4" /> Try again
+          <RefreshCw className="h-4 w-4" /> {t("common.tryAgain")}
         </Button>
       </div>
     );
@@ -183,9 +189,12 @@ export function PlanPaymentPanel({
   return (
     <div className="flex flex-col items-center gap-4 py-2 text-center">
       <div>
-        <p className="font-medium">Scan with ABA Mobile or any KHQR banking app</p>
+        <p className="font-medium">{t("paymentPanel.scanInstructions")}</p>
         <p className="text-sm text-muted-foreground">
-          {formatPrice(payment.amount_cents, payment.currency)} — code expires in {countdownLabel}
+          {t("paymentPanel.amountExpiresIn", {
+            amount: formatPrice(payment.amount_cents, payment.currency),
+            time: countdownLabel,
+          })}
         </p>
       </div>
 
@@ -203,14 +212,12 @@ export function PlanPaymentPanel({
           className="text-white hover:opacity-90"
         >
           <a href={payment.abapay_deeplink}>
-            <Smartphone className="h-4 w-4" /> Open ABA Mobile
+            <Smartphone className="h-4 w-4" /> {t("paymentPanel.openAbaMobile")}
           </a>
         </Button>
       )}
 
-      <p className="text-xs text-muted-foreground">
-        We'll publish your event automatically once payment is received.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("planPaymentPanel.autoPublishNote")}</p>
     </div>
   );
 }

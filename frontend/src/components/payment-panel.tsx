@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import { Loader2, Smartphone, RefreshCw, Check, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { paymentsApi, type ApiPayment } from "@/lib/api-client";
 import { formatPrice } from "@/lib/event-utils";
@@ -15,7 +16,7 @@ interface PaymentPanelProps {
 
 function useCountdown(expiresAt: string | null) {
   const [remaining, setRemaining] = useState(() =>
-    expiresAt ? Math.max(0, new Date(expiresAt).getTime() - Date.now()) : 0
+    expiresAt ? Math.max(0, new Date(expiresAt).getTime() - Date.now()) : 0,
   );
 
   useEffect(() => {
@@ -31,7 +32,12 @@ function useCountdown(expiresAt: string | null) {
   return { remaining, label: `${minutes}:${seconds.toString().padStart(2, "0")}` };
 }
 
-export function PaymentPanel({ registrationId, brandColor = "#6366f1", onPaid }: PaymentPanelProps) {
+export function PaymentPanel({
+  registrationId,
+  brandColor = "#6366f1",
+  onPaid,
+}: PaymentPanelProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [paymentId, setPaymentId] = useState<string | null>(null);
@@ -55,7 +61,7 @@ export function PaymentPanel({ registrationId, brandColor = "#6366f1", onPaid }:
     enabled: !!paymentId,
     refetchInterval: (query) => {
       const p = query.state.data?.payment as ApiPayment | undefined;
-      return p && (p.status === "pending") ? 4000 : false;
+      return p && p.status === "pending" ? 4000 : false;
     },
   });
 
@@ -91,7 +97,7 @@ export function PaymentPanel({ registrationId, brandColor = "#6366f1", onPaid }:
     return (
       <div className="flex flex-col items-center gap-3 py-8">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Generating your KHQR code…</p>
+        <p className="text-sm text-muted-foreground">{t("paymentPanel.generatingQr")}</p>
       </div>
     );
   }
@@ -101,10 +107,10 @@ export function PaymentPanel({ registrationId, brandColor = "#6366f1", onPaid }:
       <div className="flex flex-col items-center gap-3 py-6 text-center">
         <AlertCircle className="h-6 w-6 text-destructive" />
         <p className="text-sm text-muted-foreground">
-          {(createPayment.error as any)?.message ?? "Could not start payment."}
+          {(createPayment.error as any)?.message ?? t("paymentPanel.startError")}
         </p>
         <Button variant="outline" size="sm" onClick={regenerate}>
-          <RefreshCw className="h-4 w-4" /> Try again
+          <RefreshCw className="h-4 w-4" /> {t("common.tryAgain")}
         </Button>
       </div>
     );
@@ -118,9 +124,11 @@ export function PaymentPanel({ registrationId, brandColor = "#6366f1", onPaid }:
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
           <Check className="h-5 w-5" style={{ color: brandColor }} />
         </span>
-        <p className="font-medium">Payment received</p>
+        <p className="font-medium">{t("paymentPanel.paymentReceived")}</p>
         <p className="text-sm text-muted-foreground">
-          {formatPrice(payment.amount_cents, payment.currency)} paid — you're all set.
+          {t("paymentPanel.paidMessage", {
+            amount: formatPrice(payment.amount_cents, payment.currency),
+          })}
         </p>
       </div>
     );
@@ -129,9 +137,9 @@ export function PaymentPanel({ registrationId, brandColor = "#6366f1", onPaid }:
   if (payment.status === "expired" || (payment.status === "pending" && remaining === 0)) {
     return (
       <div className="flex flex-col items-center gap-3 py-6 text-center">
-        <p className="text-sm text-muted-foreground">This QR code has expired.</p>
+        <p className="text-sm text-muted-foreground">{t("paymentPanel.qrExpired")}</p>
         <Button variant="outline" size="sm" onClick={regenerate}>
-          <RefreshCw className="h-4 w-4" /> Generate a new QR code
+          <RefreshCw className="h-4 w-4" /> {t("paymentPanel.generateNewQr")}
         </Button>
       </div>
     );
@@ -142,10 +150,12 @@ export function PaymentPanel({ registrationId, brandColor = "#6366f1", onPaid }:
       <div className="flex flex-col items-center gap-3 py-6 text-center">
         <AlertCircle className="h-6 w-6 text-destructive" />
         <p className="text-sm text-muted-foreground">
-          This payment was {payment.status}. You can try again.
+          {t("paymentPanel.paymentStatusMessage", {
+            status: t(`paymentPanel.status.${payment.status}`),
+          })}
         </p>
         <Button variant="outline" size="sm" onClick={regenerate}>
-          <RefreshCw className="h-4 w-4" /> Try again
+          <RefreshCw className="h-4 w-4" /> {t("common.tryAgain")}
         </Button>
       </div>
     );
@@ -155,25 +165,35 @@ export function PaymentPanel({ registrationId, brandColor = "#6366f1", onPaid }:
   return (
     <div className="flex flex-col items-center gap-4 py-2 text-center">
       <div>
-        <p className="font-medium">Scan with ABA Mobile or any KHQR banking app</p>
+        <p className="font-medium">{t("paymentPanel.scanInstructions")}</p>
         <p className="text-sm text-muted-foreground">
-          {formatPrice(payment.amount_cents, payment.currency)} — code expires in {countdownLabel}
+          {t("paymentPanel.amountExpiresIn", {
+            amount: formatPrice(payment.amount_cents, payment.currency),
+            time: countdownLabel,
+          })}
         </p>
       </div>
 
-      <canvas ref={canvasRef} width={220} height={220} className="rounded-xl border border-border shadow-sm" />
+      <canvas
+        ref={canvasRef}
+        width={220}
+        height={220}
+        className="rounded-xl border border-border shadow-sm"
+      />
 
       {payment.abapay_deeplink && (
-        <Button asChild style={{ backgroundColor: brandColor }} className="text-white hover:opacity-90">
+        <Button
+          asChild
+          style={{ backgroundColor: brandColor }}
+          className="text-white hover:opacity-90"
+        >
           <a href={payment.abapay_deeplink}>
-            <Smartphone className="h-4 w-4" /> Open ABA Mobile
+            <Smartphone className="h-4 w-4" /> {t("paymentPanel.openAbaMobile")}
           </a>
         </Button>
       )}
 
-      <p className="text-xs text-muted-foreground">
-        We'll confirm automatically once payment is received — no need to refresh.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("paymentPanel.autoConfirmNote")}</p>
     </div>
   );
 }

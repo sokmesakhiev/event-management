@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Activity, Loader2, Check, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { emailVerificationsApi } from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
@@ -16,6 +17,7 @@ type State = "checking" | "success" | "error";
 
 function VerifyEmailPage() {
   const { token } = Route.useParams();
+  const { t } = useTranslation();
   const { user, refresh } = useAuth();
   const [state, setState] = useState<State>("checking");
 
@@ -51,30 +53,28 @@ function VerifyEmailPage() {
           {state === "checking" && (
             <>
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="mt-3 text-sm text-muted-foreground">Verifying your email…</p>
+              <p className="mt-3 text-sm text-muted-foreground">{t("verifyEmail.checking")}</p>
             </>
           )}
           {state === "success" && (
             <>
               <Check className="mx-auto h-8 w-8 text-primary" />
-              <h1 className="mt-3 font-display text-xl font-bold">Email verified</h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Your email address has been confirmed.
-              </p>
+              <h1 className="mt-3 font-display text-xl font-bold">{t("verifyEmail.success")}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{t("verifyEmail.successBody")}</p>
               <Button asChild variant="hero" className="mt-6 w-full">
-                <Link to={user ? "/dashboard" : "/auth"}>{user ? "Go to dashboard" : "Sign in"}</Link>
+                <Link to={user ? "/dashboard" : "/auth"}>
+                  {user ? t("header.dashboard") : t("common.signIn")}
+                </Link>
               </Button>
             </>
           )}
           {state === "error" && (
             <>
               <X className="mx-auto h-8 w-8 text-destructive" />
-              <h1 className="mt-3 font-display text-xl font-bold">Link invalid or expired</h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                This verification link is no longer valid. Sign in and request a new one.
-              </p>
+              <h1 className="mt-3 font-display text-xl font-bold">{t("verifyEmail.errorTitle")}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{t("verifyEmail.errorBody")}</p>
               <Button asChild variant="outline" className="mt-6 w-full">
-                <Link to="/auth">Back to sign in</Link>
+                <Link to="/auth">{t("forgotPassword.backToSignIn")}</Link>
               </Button>
             </>
           )}

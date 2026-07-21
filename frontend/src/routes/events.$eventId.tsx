@@ -12,6 +12,7 @@ import {
   QrCode,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { eventsApi, registrationsApi, type ApiRegistrationAnswer } from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
 import { SiteHeader } from "@/components/site-header";
@@ -35,6 +36,7 @@ type RegStep = "idle" | "types" | "survey";
 
 function EventDetail() {
   const { eventId } = Route.useParams();
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -67,14 +69,14 @@ function EventDetail() {
       queryClient.invalidateQueries({ queryKey: ["my-registrations"] });
 
       if (res.registration.payment_status === "unpaid") {
-        toast.success("You're registered — complete payment to secure your spot.");
+        toast.success(t("eventDetail.toastUnpaid"));
       } else {
-        toast.success("You're registered! Add the event to your calendar.");
+        toast.success(t("eventDetail.toastPaid"));
         if (ev) downloadICS(ev);
       }
     },
     onError: (e: any) => {
-      toast.error(e.message ?? "Could not register");
+      toast.error(e.message ?? t("eventDetail.toastRegisterError"));
       if (e.code === "full") {
         // The event (or the type they picked) filled up between page load
         // and submit — refresh capacity so the UI reflects it instead of
@@ -131,7 +133,7 @@ function EventDetail() {
         <div className="relative h-52 w-full overflow-hidden md:h-72">
           <img
             src={ev.banner_url}
-            alt={`${ev.title} banner`}
+            alt={t("common.bannerAlt", { title: ev.title })}
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
@@ -141,14 +143,12 @@ function EventDetail() {
       <main className="mx-auto max-w-3xl px-5 py-10">
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link to="/events">
-            <ArrowLeft className="h-4 w-4" /> All events
+            <ArrowLeft className="h-4 w-4" /> {t("eventDetail.allEvents")}
           </Link>
         </Button>
 
-        {eventQuery.isLoading && <p className="text-muted-foreground">Loading…</p>}
-        {eventQuery.isError && (
-          <p className="text-muted-foreground">This event could not be found.</p>
-        )}
+        {eventQuery.isLoading && <p className="text-muted-foreground">{t("common.loading")}</p>}
+        {eventQuery.isError && <p className="text-muted-foreground">{t("eventDetail.notFound")}</p>}
 
         {ev && (
           <>
@@ -157,7 +157,7 @@ function EventDetail() {
               {ev.logo_url && (
                 <img
                   src={ev.logo_url}
-                  alt="Event logo"
+                  alt={t("common.eventLogoAlt")}
                   className="h-14 w-14 rounded-xl border border-border object-cover shadow-sm flex-shrink-0"
                 />
               )}
@@ -189,11 +189,16 @@ function EventDetail() {
                 </p>
               )}
               <p className="flex items-center gap-2">
-                <Users className="h-5 w-5" /> {registeredCount}
-                {ev.capacity ? ` / ${ev.capacity}` : ""} registered
+                <Users className="h-5 w-5" />{" "}
+                {ev.capacity
+                  ? t("eventDetail.registeredWithCapacity", {
+                      count: registeredCount,
+                      capacity: ev.capacity,
+                    })
+                  : t("eventDetail.registeredNoCapacity", { count: registeredCount })}
                 {isFull && (
                   <Badge variant="outline" className="ml-1">
-                    Full
+                    {t("eventDetail.full")}
                   </Badge>
                 )}
               </p>
@@ -206,22 +211,26 @@ function EventDetail() {
             {/* Event types preview (outside the reg card) */}
             {hasTypes && regStep === "idle" && (
               <div className="mt-6 space-y-2">
-                <p className="text-sm font-medium">Available options</p>
+                <p className="text-sm font-medium">{t("eventDetail.availableOptions")}</p>
                 <div className="flex flex-wrap gap-2">
-                  {ev.event_types.map((t) => {
-                    const priceCents = t.price_cents ?? ev.price_cents;
+                  {ev.event_types.map((et) => {
+                    const priceCents = et.price_cents ?? ev.price_cents;
                     return (
                       <div
-                        key={t.id}
+                        key={et.id}
                         className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm"
                       >
-                        <span className="font-medium">{t.name}</span>
+                        <span className="font-medium">{et.name}</span>
                         <Badge variant="secondary" className="text-xs">
-                          {priceCents === 0 ? "Free" : formatPrice(priceCents, ev.currency)}
+                          {priceCents === 0
+                            ? t("common.free")
+                            : formatPrice(priceCents, ev.currency)}
                         </Badge>
-                        {t.spots_remaining !== null && t.spots_remaining <= 10 && (
+                        {et.spots_remaining !== null && et.spots_remaining <= 10 && (
                           <span className="text-xs text-muted-foreground">
-                            {t.spots_remaining === 0 ? "Full" : `${t.spots_remaining} left`}
+                            {et.spots_remaining === 0
+                              ? t("eventDetail.full")
+                              : t("eventDetail.spotsLeft", { count: et.spots_remaining })}
                           </span>
                         )}
                       </div>
@@ -248,7 +257,7 @@ function EventDetail() {
                   onBack={() => setRegStep("idle")}
                   brandColor={brandColor}
                   isPending={register.isPending}
-                  nextLabel={hasSurvey ? "Next: survey" : "Register"}
+                  nextLabel={hasSurvey ? t("eventDetail.nextSurvey") : t("eventDetail.register")}
                 />
               ) : regStep === "survey" && ev.survey ? (
                 /* Survey step */
@@ -277,32 +286,32 @@ function EventDetail() {
                       className="flex items-center gap-2 font-medium"
                       style={{ color: brandColor }}
                     >
-                      <Check className="h-5 w-5" /> You're registered
+                      <Check className="h-5 w-5" /> {t("eventDetail.youAreRegistered")}
                     </p>
                     {regQuery.data.event_types?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
-                        {regQuery.data.event_types.map((t) => (
-                          <Badge key={t.id} variant="secondary">
-                            {t.name}
+                        {regQuery.data.event_types.map((et) => (
+                          <Badge key={et.id} variant="secondary">
+                            {et.name}
                           </Badge>
                         ))}
                       </div>
                     )}
                   </div>
                   <Button variant="outline" onClick={() => downloadICS(ev)}>
-                    <Download className="h-4 w-4" /> Add to calendar
+                    <Download className="h-4 w-4" /> {t("eventDetail.addToCalendar")}
                   </Button>
                 </div>
               ) : !user && !loading ? (
                 /* Not logged in */
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <p className="text-muted-foreground">Sign in to register for this event.</p>
+                  <p className="text-muted-foreground">{t("eventDetail.signInPrompt")}</p>
                   <Button
                     onClick={() => navigate({ to: "/auth" })}
                     style={{ backgroundColor: brandColor }}
                     className="text-white hover:opacity-90"
                   >
-                    Sign in to register
+                    {t("eventDetail.signInToRegister")}
                   </Button>
                 </div>
               ) : (
@@ -311,26 +320,26 @@ function EventDetail() {
                   <div>
                     <p className="font-medium">
                       {hasTypes
-                        ? "Select your type to see pricing"
+                        ? t("eventDetail.selectTypePricing")
                         : ev.price_cents === 0
-                          ? "Free registration"
+                          ? t("eventDetail.freeRegistration")
                           : formatPrice(ev.price_cents, ev.currency)}
                     </p>
                     {!hasTypes && ev.price_cents > 0 && (
                       <p className="text-sm text-muted-foreground">
-                        Pay instantly by KHQR after you register.
+                        {t("eventDetail.payInstantly")}
                       </p>
                     )}
                     {hasTypes && (
                       <p className="text-sm text-muted-foreground">
-                        {ev.event_types.length} option{ev.event_types.length !== 1 ? "s" : ""}{" "}
-                        available — you can select multiple.
+                        {t("eventDetail.optionsAvailable", { count: ev.event_types.length })}
                       </p>
                     )}
                     {hasSurvey && (
                       <p className="text-sm text-muted-foreground mt-1">
-                        Includes a short survey ({ev.survey!.questions.length} question
-                        {ev.survey!.questions.length !== 1 ? "s" : ""}).
+                        {t("eventDetail.includesSurvey", {
+                          count: ev.survey!.questions.length,
+                        })}
                       </p>
                     )}
                   </div>
@@ -341,7 +350,7 @@ function EventDetail() {
                     className="text-white hover:opacity-90 disabled:opacity-50"
                   >
                     {register.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {isFull ? "Event full" : "Register"}
+                    {isFull ? t("eventDetail.eventFull") : t("eventDetail.register")}
                   </Button>
                 </div>
               )}
@@ -351,12 +360,9 @@ function EventDetail() {
             <div className="mt-8 rounded-2xl border border-border bg-card p-6">
               <div className="flex items-center gap-2 mb-3">
                 <QrCode className="h-5 w-5 text-muted-foreground" />
-                <h2 className="font-semibold">Share this event</h2>
+                <h2 className="font-semibold">{t("eventDetail.shareEvent")}</h2>
               </div>
-              <p className="text-sm text-muted-foreground mb-5">
-                Scan the QR code to open this page, or download it to share on posters and social
-                media.
-              </p>
+              <p className="text-sm text-muted-foreground mb-5">{t("eventDetail.shareDesc")}</p>
               <EventQRCode eventId={eventId} brandColor={brandColor} />
             </div>
           </>

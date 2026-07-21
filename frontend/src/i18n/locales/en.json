@@ -1,0 +1,467 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "tryAgain": "Try again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "back": "Back",
+    "close": "Close",
+    "free": "Free",
+    "draft": "Draft",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "genericError": "Something went wrong. Please try again.",
+    "goHome": "Go home",
+    "backToHome": "Back to home",
+    "download": "Download",
+    "rallyLogoAlt": "Rally logo",
+    "bannerAlt": "{{title}} banner",
+    "eventLogoAlt": "Event logo"
+  },
+  "eventCategories": {
+    "running": "Running",
+    "cycling": "Cycling",
+    "swimming": "Swimming",
+    "triathlon": "Triathlon",
+    "hiking": "Hiking",
+    "other": "Other",
+    "event": "Event"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved."
+  },
+  "errorPage": {
+    "title": "This page didn't load",
+    "description": "Something went wrong on our end. You can try refreshing or head back home."
+  },
+  "header": {
+    "browseEvents": "Browse events",
+    "dashboard": "Dashboard",
+    "features": "Features",
+    "pricing": "Pricing",
+    "howItWorks": "How it works",
+    "welcome": "Welcome, {{name}}",
+    "fallbackName": "there",
+    "editProfile": "Edit profile",
+    "paymentSettings": "Payment settings"
+  },
+  "verifyEmailBanner": {
+    "message": "Please verify your email address ({{email}}).",
+    "resend": "Resend email",
+    "sent": "Sent",
+    "sentToast": "Verification email sent — check your inbox.",
+    "sendError": "Could not send verification email"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Event management for movers",
+      "titlePrefix": "Bring people",
+      "titleHighlight": "together",
+      "titleSuffix": ", one event at a time.",
+      "subtitle": "Rally is the easiest way to organize running races, group rides and community gatherings. Set up an event, open registrations and manage the whole day from a single dashboard.",
+      "ctaPrimary": "Get started free",
+      "ctaSecondary": "See how it works",
+      "statEvents": "events hosted",
+      "statParticipants": "participants",
+      "statRating": "organizer rating",
+      "imageAlt": "Runners racing along a coastal road at dawn"
+    },
+    "eventTypes": {
+      "title": "Built for every kind of gathering",
+      "subtitle": "Whether it's a competitive race or a relaxed weekend meetup, Rally has you covered.",
+      "items": {
+        "running": { "label": "Running races", "note": "5K, 10K, half & full marathons" },
+        "rides": { "label": "Group rides", "note": "Casual spins to century challenges" },
+        "gatherings": { "label": "Community gatherings", "note": "Meetups, clinics & social runs" }
+      }
+    },
+    "features": {
+      "title": "Everything you need to run a great event",
+      "subtitle": "From the first registration to the finish line, Rally handles the logistics so you can focus on the experience.",
+      "items": {
+        "setup": {
+          "title": "Set up in minutes",
+          "desc": "Create an event with date, route, capacity and pricing through a guided flow."
+        },
+        "registrations": {
+          "title": "Registrations & tickets",
+          "desc": "Free or paid sign-ups with capacity limits, waitlists and instant confirmations."
+        },
+        "routes": {
+          "title": "Routes & maps",
+          "desc": "Share start points, distances and elevation so participants know what to expect."
+        },
+        "updates": {
+          "title": "Updates that land",
+          "desc": "Notify everyone about schedule changes, weather, or last-minute details."
+        },
+        "dashboard": {
+          "title": "Live dashboard",
+          "desc": "Track sign-ups and attendance in real time from one clean overview."
+        },
+        "results": {
+          "title": "Results & community",
+          "desc": "Post results, celebrate finishers, and keep your people coming back."
+        }
+      }
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "Every event starts as a free draft. When you're ready to open registrations, pick a plan based on how many people you expect — that's what you pay to publish.",
+      "loading": "Loading plans…",
+      "startHere": "Start here",
+      "perEvent": "per published event",
+      "registrantsUpTo": "Up to {{formatted}} registrants",
+      "dashboardFeature": "Full dashboard, branding & QR code",
+      "getStarted": "Get started"
+    },
+    "how": {
+      "title": "How it works",
+      "subtitle": "Go from idea to a fully managed event in three simple steps.",
+      "steps": {
+        "create": {
+          "title": "Create your event",
+          "desc": "Add details, route and registration settings."
+        },
+        "share": {
+          "title": "Share the link",
+          "desc": "Promote it and let people sign up in seconds."
+        },
+        "run": {
+          "title": "Run the day",
+          "desc": "Manage check-ins, updates and results in one place."
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to rally your community?",
+      "subtitle": "Create your first event today. It's free to get started.",
+      "button": "Sign in to get started"
+    },
+    "footer": {
+      "tagline": "© {{year}} Rally. Bring people together."
+    }
+  },
+  "auth": {
+    "brand": {
+      "titlePrefix": "Organize events people",
+      "titleHighlight": "love to join",
+      "subtitle": "Set up races, rides and gatherings, open registrations and manage the whole day from one dashboard."
+    },
+    "tabs": { "signIn": "Sign in", "signUp": "Create account" },
+    "continueWithGoogle": "Continue with Google",
+    "orWithEmail": "or with email",
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Alex Runner",
+      "passwordPlaceholder": "At least 8 characters"
+    },
+    "forgotPassword": "Forgot password?",
+    "welcomeBack": "Welcome back!",
+    "accountCreated": "Account created! Welcome to Rally.",
+    "googleUnavailable": "Google sign-in is not yet available. Please use email & password.",
+    "errors": {
+      "invalidEmail": "Enter a valid email",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "signInFailed": "Sign in failed",
+      "signUpFailed": "Sign up failed"
+    }
+  },
+  "forgotPassword": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email and we'll send you a reset link.",
+    "sendLink": "Send reset link",
+    "backToSignIn": "Back to sign in",
+    "checkEmailTitle": "Check your email",
+    "checkEmailBody": "If an account exists for {{email}}, we've sent a link to reset your password. It expires in 2 hours."
+  },
+  "resetPassword": {
+    "title": "Set a new password",
+    "subtitle": "Choose a new password for your account.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "confirmPlaceholder": "Re-enter your new password",
+    "update": "Update password",
+    "mismatch": "Passwords don't match",
+    "success": "Password updated. Welcome back!",
+    "invalidLink": "This reset link is invalid or has expired."
+  },
+  "verifyEmail": {
+    "checking": "Verifying your email…",
+    "success": "Email verified",
+    "successBody": "Your email address has been confirmed.",
+    "errorTitle": "Link invalid or expired",
+    "errorBody": "This verification link is no longer valid. Sign in and request a new one."
+  },
+  "eventsList": {
+    "openForRegistration": "Open for registration",
+    "titlePrefix": "Discover events worth",
+    "titleHighlight": "showing up for",
+    "subtitle": "From casual weekend rides to full-distance races, every event below is organized by real people in your community. Browse what's coming up, check the details that matter — date, location, price and format — and register in seconds. No account needed to look around.",
+    "valueProps": {
+      "realDates": {
+        "title": "Real dates, real capacity",
+        "desc": "Every listing shows the actual date, location and spots available — no guesswork."
+      },
+      "community": {
+        "title": "Run by your community",
+        "desc": "Events here are organized by real people — local clubs, teams and organizers, not brands."
+      },
+      "registerFast": {
+        "title": "Register in seconds",
+        "desc": "Pick an event, sign up, and get your confirmation instantly. No back-and-forth required."
+      }
+    },
+    "upcomingEvents": "Upcoming events",
+    "filterAll": "All",
+    "emptyAll": "No upcoming events yet. Check back soon!",
+    "emptyCategory": "No events in this category right now.",
+    "viewAndRegister": "View & register"
+  },
+  "eventDetail": {
+    "allEvents": "All events",
+    "notFound": "This event could not be found.",
+    "registeredWithCapacity": "{{count}} / {{capacity}} registered",
+    "registeredNoCapacity": "{{count}} registered",
+    "full": "Full",
+    "availableOptions": "Available options",
+    "spotsLeft": "{{count}} left",
+    "selectTypePricing": "Select your type to see pricing",
+    "freeRegistration": "Free registration",
+    "payInstantly": "Pay instantly by KHQR after you register.",
+    "optionsAvailable_one": "{{count}} option available — you can select multiple.",
+    "optionsAvailable_other": "{{count}} options available — you can select multiple.",
+    "includesSurvey_one": "Includes a short survey ({{count}} question).",
+    "includesSurvey_other": "Includes a short survey ({{count}} questions).",
+    "eventFull": "Event full",
+    "register": "Register",
+    "nextSurvey": "Next: survey",
+    "youAreRegistered": "You're registered",
+    "addToCalendar": "Add to calendar",
+    "signInPrompt": "Sign in to register for this event.",
+    "signInToRegister": "Sign in to register",
+    "shareEvent": "Share this event",
+    "shareDesc": "Scan the QR code to open this page, or download it to share on posters and social media.",
+    "toastUnpaid": "You're registered — complete payment to secure your spot.",
+    "toastPaid": "You're registered! Add the event to your calendar.",
+    "toastRegisterError": "Could not register"
+  },
+  "dashboard": {
+    "title": "Your dashboard",
+    "subtitle": "Manage the events you host and the ones you've joined.",
+    "createEvent": "Create event",
+    "participating": "Participating",
+    "created": "Created",
+    "registrationsError": "Couldn't load your registrations.",
+    "emptyParticipatingTitle": "No events yet",
+    "emptyParticipatingDesc": "Browse events and register to see them here.",
+    "paid": "Paid",
+    "paymentDue": "Payment due",
+    "completePayment": "Complete payment",
+    "eventsError": "Couldn't load your events. Check that the backend is running and up to date (pending migrations?), then refresh.",
+    "emptyCreatedTitle": "No events created",
+    "emptyCreatedDesc": "Host your first race, ride or gathering.",
+    "participantsWithCapacity_one": "{{count}} / {{capacity}} participant",
+    "participantsWithCapacity_other": "{{count}} / {{capacity}} participants",
+    "participantsNoCapacity_one": "{{count}} participant",
+    "participantsNoCapacity_other": "{{count}} participants",
+    "manage": "Manage"
+  },
+  "manageEvent": {
+    "backToDashboard": "Back to dashboard",
+    "loadError": "Couldn't load this event.",
+    "loadErrorGeneric": "Something went wrong talking to the API. Check that the backend is running and up to date (pending migrations?), then try again.",
+    "unpublish": "Unpublish",
+    "deleteDialogTitle": "Delete this event?",
+    "deleteDialogDesc": "This permanently removes the event and all registrations. This cannot be undone.",
+    "publishTitle": "Publish this event",
+    "publishDesc": "This event is a draft — only you can see it. Pick a plan to open registrations. Your plan sets how many people can register.",
+    "previouslyPickedPrefix": "You previously picked",
+    "previouslyPickedSuffix": "— republishing under it is free.",
+    "combinedCapacityPrefix": "Your event types add up to",
+    "combinedCapacitySuffix": "people combined — pick a plan with at least that much capacity.",
+    "planSuffix": "plan",
+    "changePlan": "Change plan",
+    "loadingPlans": "Loading plans…",
+    "upToPeople": "Up to {{count}} people",
+    "tooSmall": "Too small for your event types",
+    "statParticipants": "Participants",
+    "statPaid": "Paid",
+    "statRevenue": "Revenue",
+    "byType": "Registrations by type",
+    "tabParticipants": "Participants",
+    "tabBranding": "QR & Branding",
+    "tabResponses": "Responses",
+    "noParticipants": "No one has registered yet. Share your event to get sign-ups.",
+    "participantFallback": "Participant",
+    "registeredOn": "Registered {{date}}",
+    "paidBadge": "Paid",
+    "unpaidBadge": "Unpaid",
+    "markUnpaid": "Mark unpaid",
+    "markPaid": "Mark paid",
+    "qrTitle": "Event QR code",
+    "qrDesc": "Share this so people can scan and go straight to the registration page. The color follows your brand color below.",
+    "brandingTitle": "Branding",
+    "brandingDesc": "Update the look of your public event page.",
+    "bannerImage": "Banner image",
+    "logo": "Logo",
+    "brandColor": "Brand color",
+    "customColor": "Custom color",
+    "saveBranding": "Save branding",
+    "responsesLoading": "Loading responses…",
+    "responsesError": "Could not load survey responses.",
+    "responseCount_one": "{{count}} response",
+    "responseCount_other": "{{count}} responses",
+    "noResponsesYet": "No survey responses yet.",
+    "requiredSuffix": "required",
+    "noAnswersYet": "No answers yet.",
+    "noAnswer": "No answer",
+    "toastPaymentUpdated": "Payment updated",
+    "toastParticipantRemoved": "Participant removed",
+    "toastBrandingSaved": "Branding saved",
+    "toastEventDeleted": "Event deleted",
+    "toastEventUnpublished": "Event unpublished"
+  },
+  "eventForm": {
+    "title": "Create an event",
+    "subtitle": "Fill in the details and save it as a draft. You'll pick a plan — which sets your registrant capacity — and publish from the event page.",
+    "eventTitle": "Event title",
+    "titlePlaceholder": "Sunrise 10K",
+    "description": "Description",
+    "descPlaceholder": "Route, what to bring, start line details…",
+    "category": "Category",
+    "location": "Location",
+    "locationPlaceholder": "Central Park, NYC",
+    "starts": "Starts",
+    "endsOptional": "Ends (optional)",
+    "paidEvent": "Paid event",
+    "paidEventDesc": "Charge participants to register.",
+    "price": "Price (USD)",
+    "pricePlaceholder": "25.00",
+    "capacityNote": "Registrant capacity isn't set here — you'll choose a pricing plan (which includes a capacity limit) when you publish this event from its management page.",
+    "brandingDesc": "Personalize your event with a color, banner, and logo.",
+    "eventTypesTitle": "Event types / distances",
+    "eventTypesDesc": "Let participants choose between different options (e.g. 5km, 10km, marathon).",
+    "surveyTitle": "Registration survey",
+    "surveyDesc": "Ask participants questions when they sign up.",
+    "defaultSurveyTitle": "Registration Survey",
+    "saveDraft": "Save draft",
+    "toastDraftSaved": "Draft saved — pick a plan to publish it.",
+    "toastCreateError": "Could not create event",
+    "errorAddTitle": "Add a title",
+    "errorAddStart": "Add a start date & time",
+    "errorEndAfterStart": "End time must be after start time",
+    "errorValidPrice": "Add a valid price"
+  },
+  "profile": {
+    "title": "Your profile",
+    "loadError": "Couldn't load your profile.",
+    "basicInfoTitle": "Basic info",
+    "basicInfoDesc": "This is what participants and other organizers see.",
+    "avatar": "Avatar",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Your name",
+    "saveProfile": "Save profile",
+    "connected": "Connected",
+    "connectPrefix": "Connect your own",
+    "connectSuffix": "merchant account so payments from people registering for your events go straight to you. Until you connect one, registration payments are collected through Rally's default account.",
+    "merchantId": "Merchant ID",
+    "merchantIdPlaceholder": "e.g. ec439175",
+    "apiKey": "API key",
+    "apiKeySavedPlaceholder": "Saved: {{masked}} — leave blank to keep it",
+    "apiKeyPlaceholder": "Paste your PayWay API key",
+    "apiKeyNote": "Stored encrypted. We never show the full key again once it's saved.",
+    "savePaymentSettings": "Save payment settings",
+    "disconnect": "Disconnect",
+    "toastProfileSaved": "Profile saved",
+    "toastProfileSaveError": "Could not save your profile.",
+    "toastPaymentSaved": "Payment settings saved",
+    "toastPaymentSaveError": "Could not save payment settings.",
+    "toastDisconnected": "PayWay disconnected",
+    "toastDisconnectError": "Could not disconnect PayWay."
+  },
+  "surveyBuilder": {
+    "optionLabelPlaceholder": "Option label",
+    "questionLabel": "Q{{number}}",
+    "question": "Question",
+    "questionPlaceholder": "e.g. What is your experience level?",
+    "answerType": "Answer type",
+    "type": {
+      "text": "Text answer",
+      "single_choice": "Select one",
+      "multiple_choice": "Select many"
+    },
+    "options": "Options",
+    "addOption": "Add option",
+    "required": "Required",
+    "surveyTitle": "Survey title",
+    "addQuestion": "Add question"
+  },
+  "surveyForm": {
+    "subtitle": "Please answer the questions below to complete your registration.",
+    "requiredAlert": "Please answer: \"{{question}}\"",
+    "answerPlaceholder": "Your answer…",
+    "completeRegistration": "Complete registration"
+  },
+  "eventTypeBuilder": {
+    "typeLabel": "Type {{number}}",
+    "name": "Name",
+    "namePlaceholder": "e.g. 5km, Half Marathon",
+    "descriptionOptional": "Description (optional)",
+    "descriptionPlaceholder": "Route details, eligibility, notes…",
+    "defaultPrice": "Default (${{price}})",
+    "usesEventPrice": "Uses event price",
+    "capacity": "Capacity",
+    "unlimited": "Unlimited",
+    "addType": "Add type"
+  },
+  "eventTypeSelector": {
+    "title": "Choose your type(s)",
+    "subtitle": "Select one or more options to register for.",
+    "spotsLeft_one": "{{count}} spot left",
+    "spotsLeft_other": "{{count}} spots left",
+    "typesSelected_one": "{{count}} type selected",
+    "typesSelected_other": "{{count}} types selected",
+    "total": "{{amount}} total",
+    "next": "Next"
+  },
+  "imageUpload": {
+    "uploadFailed": "Upload failed",
+    "previewAlt": "Upload preview",
+    "clickOrDrag": "Click or drag to upload"
+  },
+  "paymentPanel": {
+    "generatingQr": "Generating your KHQR code…",
+    "startError": "Could not start payment.",
+    "paymentReceived": "Payment received",
+    "paidMessage": "{{amount}} paid — you're all set.",
+    "qrExpired": "This QR code has expired.",
+    "generateNewQr": "Generate a new QR code",
+    "paymentStatusMessage": "This payment was {{status}}. You can try again.",
+    "status": {
+      "declined": "declined",
+      "cancelled": "cancelled"
+    },
+    "scanInstructions": "Scan with ABA Mobile or any KHQR banking app",
+    "amountExpiresIn": "{{amount}} — code expires in {{time}}",
+    "openAbaMobile": "Open ABA Mobile",
+    "autoConfirmNote": "We'll confirm automatically once payment is received — no need to refresh."
+  },
+  "planPaymentPanel": {
+    "eventPublished": "Event published!",
+    "nowVisible": "It's now visible on the public events page.",
+    "preparingPlan": "Preparing your plan…",
+    "startError": "Could not start this plan.",
+    "paymentReceived": "Payment received — event published!",
+    "paidMessage": "{{amount}} paid.",
+    "autoPublishNote": "We'll publish your event automatically once payment is received."
+  },
+  "eventQrCode": {
+    "scanToRegister": "Scan to register for this event",
+    "downloadQr": "Download QR"
+  }
+}

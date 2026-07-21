@@ -20,6 +20,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   eventsApi,
   registrationsApi,
@@ -47,7 +48,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatDateTime, formatPrice, categoryLabel } from "@/lib/event-utils";
+import { formatDateTime, formatDate, formatPrice, categoryLabel } from "@/lib/event-utils";
 import { downloadICS } from "@/lib/ics";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,7 @@ const PRESET_COLORS = [
 
 function ManageEvent() {
   const { eventId } = Route.useParams();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -112,7 +114,7 @@ function ManageEvent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-participants", eventId] });
-      toast.success("Payment updated");
+      toast.success(t("manageEvent.toastPaymentUpdated"));
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -121,7 +123,7 @@ function ManageEvent() {
     mutationFn: (id: string) => registrationsApi.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-participants", eventId] });
-      toast.success("Participant removed");
+      toast.success(t("manageEvent.toastParticipantRemoved"));
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -136,7 +138,7 @@ function ManageEvent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event", eventId] });
       queryClient.invalidateQueries({ queryKey: ["public-event", eventId] });
-      toast.success("Branding saved");
+      toast.success(t("manageEvent.toastBrandingSaved"));
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -145,7 +147,7 @@ function ManageEvent() {
     mutationFn: () => eventsApi.delete(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-events"] });
-      toast.success("Event deleted");
+      toast.success(t("manageEvent.toastEventDeleted"));
       navigate({ to: "/dashboard" });
     },
     onError: (e: any) => toast.error(e.message),
@@ -167,7 +169,7 @@ function ManageEvent() {
     mutationFn: () => eventsApi.unpublish(eventId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-      toast.success("Event unpublished");
+      toast.success(t("manageEvent.toastEventUnpublished"));
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -190,17 +192,16 @@ function ManageEvent() {
       <main className="mx-auto max-w-4xl px-5 py-10">
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link to="/dashboard">
-            <ArrowLeft className="h-4 w-4" /> Back to dashboard
+            <ArrowLeft className="h-4 w-4" /> {t("manageEvent.backToDashboard")}
           </Link>
         </Button>
 
-        {eventQuery.isLoading && <p className="text-muted-foreground">Loading…</p>}
+        {eventQuery.isLoading && <p className="text-muted-foreground">{t("common.loading")}</p>}
         {eventQuery.isError && (
           <div className="mt-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center">
-            <p className="font-medium text-destructive">Couldn't load this event.</p>
+            <p className="font-medium text-destructive">{t("manageEvent.loadError")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {(eventQuery.error as any)?.message ??
-                "Something went wrong talking to the API. Check that the backend is running and up to date (pending migrations?), then try again."}
+              {(eventQuery.error as any)?.message ?? t("manageEvent.loadErrorGeneric")}
             </p>
             <Button
               variant="outline"
@@ -208,7 +209,7 @@ function ManageEvent() {
               className="mt-4"
               onClick={() => eventQuery.refetch()}
             >
-              Try again
+              {t("common.tryAgain")}
             </Button>
           </div>
         )}
@@ -219,7 +220,7 @@ function ManageEvent() {
               <div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">{categoryLabel(ev.category)}</Badge>
-                  {!ev.is_published && <Badge variant="outline">Draft</Badge>}
+                  {!ev.is_published && <Badge variant="outline">{t("common.draft")}</Badge>}
                   <Badge variant="outline">{formatPrice(ev.price_cents, ev.currency)}</Badge>
                 </div>
                 <h1 className="mt-2 font-display text-3xl font-bold">{ev.title}</h1>
@@ -248,27 +249,26 @@ function ManageEvent() {
                     ) : (
                       <EyeOff className="h-4 w-4" />
                     )}
-                    Unpublish
+                    {t("manageEvent.unpublish")}
                   </Button>
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm">
-                      <Trash2 className="h-4 w-4" /> Delete
+                      <Trash2 className="h-4 w-4" /> {t("common.delete")}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+                      <AlertDialogTitle>{t("manageEvent.deleteDialogTitle")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This permanently removes the event and all registrations. This cannot be
-                        undone.
+                        {t("manageEvent.deleteDialogDesc")}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => deleteEvent.mutate()}>
-                        Delete
+                        {t("common.delete")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -281,24 +281,24 @@ function ManageEvent() {
               <div className="mt-8 rounded-2xl border border-primary/30 bg-primary/5 p-6">
                 <div className="flex items-center gap-2">
                   <Rocket className="h-5 w-5 text-primary" />
-                  <h2 className="font-semibold">Publish this event</h2>
+                  <h2 className="font-semibold">{t("manageEvent.publishTitle")}</h2>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  This event is a draft — only you can see it. Pick a plan to open registrations.
-                  Your plan sets how many people can register.
+                  {t("manageEvent.publishDesc")}
                   {ev.plan && (
                     <>
                       {" "}
-                      You previously picked <strong>{ev.plan.replace("_", " ")}</strong> —
-                      republishing under it is free.
+                      {t("manageEvent.previouslyPickedPrefix")}{" "}
+                      <strong>{ev.plan.replace("_", " ")}</strong>{" "}
+                      {t("manageEvent.previouslyPickedSuffix")}
                     </>
                   )}
                 </p>
                 {combinedTypeCapacity > 0 && (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Your event types add up to{" "}
-                    <strong>{combinedTypeCapacity.toLocaleString()}</strong> people combined — pick
-                    a plan with at least that much capacity.
+                    {t("manageEvent.combinedCapacityPrefix")}{" "}
+                    <strong>{combinedTypeCapacity.toLocaleString()}</strong>{" "}
+                    {t("manageEvent.combinedCapacitySuffix")}
                   </p>
                 )}
 
@@ -306,10 +306,10 @@ function ManageEvent() {
                   <div className="mt-5 rounded-xl border border-border bg-card p-5">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium capitalize">
-                        {selectedPlan.replace("_", " ")} plan
+                        {selectedPlan.replace("_", " ")} {t("manageEvent.planSuffix")}
                       </p>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedPlan(null)}>
-                        Change plan
+                        {t("manageEvent.changePlan")}
                       </Button>
                     </div>
                     <PlanPaymentPanel
@@ -322,7 +322,9 @@ function ManageEvent() {
                 ) : (
                   <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     {plansQuery.isLoading && (
-                      <p className="text-sm text-muted-foreground">Loading plans…</p>
+                      <p className="text-sm text-muted-foreground">
+                        {t("manageEvent.loadingPlans")}
+                      </p>
                     )}
                     {plansQuery.data?.map((plan) => {
                       const tooSmall = plan.capacity < combinedTypeCapacity;
@@ -339,14 +341,16 @@ function ManageEvent() {
                         >
                           <p className="text-sm font-semibold">{plan.label}</p>
                           <p className="mt-1 text-lg font-bold">
-                            {plan.price_cents === 0 ? "Free" : formatPrice(plan.price_cents, "usd")}
+                            {plan.price_cents === 0
+                              ? t("common.free")
+                              : formatPrice(plan.price_cents, "usd")}
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Up to {plan.capacity.toLocaleString()} people
+                            {t("manageEvent.upToPeople", { count: plan.capacity })}
                           </p>
                           {tooSmall && (
                             <p className="mt-1 text-xs text-destructive">
-                              Too small for your event types
+                              {t("manageEvent.tooSmall")}
                             </p>
                           )}
                         </button>
@@ -361,21 +365,25 @@ function ManageEvent() {
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <Stat
                 icon={Users}
-                label="Participants"
+                label={t("manageEvent.statParticipants")}
                 value={`${participants.length}${ev.capacity ? ` / ${ev.capacity}` : ""}`}
               />
               <Stat
                 icon={Check}
-                label="Paid"
+                label={t("manageEvent.statPaid")}
                 value={ev.price_cents === 0 ? "—" : `${paidCount} / ${participants.length}`}
               />
-              <Stat icon={DollarSign} label="Revenue" value={formatPrice(revenue, ev.currency)} />
+              <Stat
+                icon={DollarSign}
+                label={t("manageEvent.statRevenue")}
+                value={formatPrice(revenue, ev.currency)}
+              />
             </div>
 
             {/* Per-type breakdown */}
             {ev.event_types?.length > 0 && (
               <div className="mt-6 rounded-2xl border border-border bg-card p-5">
-                <p className="text-sm font-semibold mb-3">Registrations by type</p>
+                <p className="text-sm font-semibold mb-3">{t("manageEvent.byType")}</p>
                 <div className="space-y-2">
                   {ev.event_types.map((et) => {
                     const count = participants.filter((p) =>
@@ -410,14 +418,14 @@ function ManageEvent() {
                 className={`grid w-full ${ev?.survey_id ? "max-w-lg grid-cols-3" : "max-w-sm grid-cols-2"}`}
               >
                 <TabsTrigger value="participants">
-                  <Users className="h-4 w-4 mr-1.5" /> Participants
+                  <Users className="h-4 w-4 mr-1.5" /> {t("manageEvent.tabParticipants")}
                 </TabsTrigger>
                 <TabsTrigger value="branding">
-                  <Palette className="h-4 w-4 mr-1.5" /> QR & Branding
+                  <Palette className="h-4 w-4 mr-1.5" /> {t("manageEvent.tabBranding")}
                 </TabsTrigger>
                 {ev?.survey_id && (
                   <TabsTrigger value="responses">
-                    <ClipboardList className="h-4 w-4 mr-1.5" /> Responses
+                    <ClipboardList className="h-4 w-4 mr-1.5" /> {t("manageEvent.tabResponses")}
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -426,11 +434,11 @@ function ManageEvent() {
               <TabsContent value="participants" className="mt-6">
                 <div className="overflow-hidden rounded-2xl border border-border">
                   {participantsQuery.isLoading && (
-                    <p className="p-5 text-sm text-muted-foreground">Loading…</p>
+                    <p className="p-5 text-sm text-muted-foreground">{t("common.loading")}</p>
                   )}
                   {!participantsQuery.isLoading && participants.length === 0 && (
                     <p className="p-8 text-center text-sm text-muted-foreground">
-                      No one has registered yet. Share your event to get sign-ups.
+                      {t("manageEvent.noParticipants")}
                     </p>
                   )}
                   {participants.map((p, i) => (
@@ -441,9 +449,11 @@ function ManageEvent() {
                       }`}
                     >
                       <div className="min-w-0">
-                        <p className="font-medium">{p.profile?.display_name ?? "Participant"}</p>
+                        <p className="font-medium">
+                          {p.profile?.display_name ?? t("manageEvent.participantFallback")}
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          Registered {new Date(p.created_at).toLocaleDateString()}
+                          {t("manageEvent.registeredOn", { date: formatDate(p.created_at) })}
                         </p>
                         {p.event_types?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
@@ -458,7 +468,9 @@ function ManageEvent() {
                       <div className="flex items-center gap-2">
                         {ev.price_cents > 0 && (
                           <Badge variant={p.payment_status === "paid" ? "default" : "outline"}>
-                            {p.payment_status === "paid" ? "Paid" : "Unpaid"}
+                            {p.payment_status === "paid"
+                              ? t("manageEvent.paidBadge")
+                              : t("manageEvent.unpaidBadge")}
                           </Badge>
                         )}
                         {ev.price_cents > 0 &&
@@ -470,7 +482,7 @@ function ManageEvent() {
                                 setPayment.mutate({ id: p.id, status: "unpaid", amount: 0 })
                               }
                             >
-                              <X className="h-4 w-4" /> Mark unpaid
+                              <X className="h-4 w-4" /> {t("manageEvent.markUnpaid")}
                             </Button>
                           ) : (
                             <Button
@@ -484,7 +496,7 @@ function ManageEvent() {
                                 })
                               }
                             >
-                              <Check className="h-4 w-4" /> Mark paid
+                              <Check className="h-4 w-4" /> {t("manageEvent.markPaid")}
                             </Button>
                           ))}
                         <Button
@@ -506,29 +518,24 @@ function ManageEvent() {
                 <div className="rounded-2xl border border-border bg-card p-6">
                   <div className="flex items-center gap-2 mb-1">
                     <QrCode className="h-5 w-5 text-muted-foreground" />
-                    <h2 className="font-semibold">Event QR code</h2>
+                    <h2 className="font-semibold">{t("manageEvent.qrTitle")}</h2>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Share this so people can scan and go straight to the registration page. The
-                    color follows your brand color below.
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-6">{t("manageEvent.qrDesc")}</p>
                   <EventQRCode eventId={eventId} brandColor={activeBrandColor} />
                 </div>
 
                 {/* Branding editor card */}
                 <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
                   <div>
-                    <h2 className="font-semibold">Branding</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Update the look of your public event page.
-                    </p>
+                    <h2 className="font-semibold">{t("manageEvent.brandingTitle")}</h2>
+                    <p className="text-sm text-muted-foreground">{t("manageEvent.brandingDesc")}</p>
                   </div>
 
                   <ImageUpload
                     value={bannerUrl ?? null}
                     onChange={setBannerUrl}
                     variant="banner"
-                    label="Banner image"
+                    label={t("manageEvent.bannerImage")}
                   />
 
                   <div className="flex flex-wrap gap-6">
@@ -536,11 +543,11 @@ function ManageEvent() {
                       value={logoUrl ?? null}
                       onChange={setLogoUrl}
                       variant="logo"
-                      label="Logo"
+                      label={t("manageEvent.logo")}
                     />
 
                     <div className="flex-1 space-y-2 min-w-[160px]">
-                      <Label>Brand color</Label>
+                      <Label>{t("manageEvent.brandColor")}</Label>
                       <div className="flex flex-wrap gap-2">
                         {PRESET_COLORS.map((c) => (
                           <button
@@ -559,7 +566,7 @@ function ManageEvent() {
                         ))}
                         <label
                           className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-border bg-muted text-xs text-muted-foreground hover:border-primary"
-                          title="Custom color"
+                          title={t("manageEvent.customColor")}
                         >
                           <input
                             type="color"
@@ -588,7 +595,7 @@ function ManageEvent() {
                     variant="hero"
                   >
                     {saveBranding.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Save branding
+                    {t("manageEvent.saveBranding")}
                   </Button>
                 </div>
               </TabsContent>
@@ -597,11 +604,13 @@ function ManageEvent() {
               {ev?.survey_id && (
                 <TabsContent value="responses" className="mt-6">
                   {surveyResponsesQuery.isLoading && (
-                    <p className="text-sm text-muted-foreground">Loading responses…</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("manageEvent.responsesLoading")}
+                    </p>
                   )}
 
                   {surveyResponsesQuery.isError && (
-                    <p className="text-sm text-destructive">Could not load survey responses.</p>
+                    <p className="text-sm text-destructive">{t("manageEvent.responsesError")}</p>
                   )}
 
                   {surveyResponsesQuery.data && (
@@ -613,8 +622,9 @@ function ManageEvent() {
                             {surveyResponsesQuery.data.survey.title}
                           </h2>
                           <p className="text-sm text-muted-foreground">
-                            {surveyResponsesQuery.data.responses.length} response
-                            {surveyResponsesQuery.data.responses.length !== 1 ? "s" : ""}
+                            {t("manageEvent.responseCount", {
+                              count: surveyResponsesQuery.data.responses.length,
+                            })}
                           </p>
                         </div>
                       </div>
@@ -622,7 +632,7 @@ function ManageEvent() {
                       {surveyResponsesQuery.data.responses.length === 0 ? (
                         <div className="rounded-2xl border border-border p-10 text-center text-sm text-muted-foreground">
                           <MessageSquare className="mx-auto h-8 w-8 mb-3 opacity-30" />
-                          No survey responses yet.
+                          {t("manageEvent.noResponsesYet")}
                         </div>
                       ) : (
                         /* Per-question breakdown */
@@ -644,13 +654,13 @@ function ManageEvent() {
                                   <p className="font-medium text-sm">{q.question_text}</p>
                                   <p className="text-xs text-muted-foreground capitalize mt-0.5">
                                     {q.question_type.replace("_", " ")}
-                                    {q.required && " · required"}
+                                    {q.required && ` · ${t("manageEvent.requiredSuffix")}`}
                                   </p>
                                 </div>
 
                                 {answersForQ.length === 0 ? (
                                   <p className="px-5 py-4 text-sm text-muted-foreground">
-                                    No answers yet.
+                                    {t("manageEvent.noAnswersYet")}
                                   </p>
                                 ) : (
                                   <div className="divide-y divide-border">
@@ -664,7 +674,7 @@ function ManageEvent() {
                                             <p className="text-sm whitespace-pre-wrap">
                                               {answer.answer_text || (
                                                 <span className="italic text-muted-foreground">
-                                                  No answer
+                                                  {t("manageEvent.noAnswer")}
                                                 </span>
                                               )}
                                             </p>
@@ -672,7 +682,7 @@ function ManageEvent() {
                                             <div className="flex flex-wrap gap-1.5">
                                               {(answer?.answer_options ?? []).length === 0 ? (
                                                 <span className="text-sm italic text-muted-foreground">
-                                                  No answer
+                                                  {t("manageEvent.noAnswer")}
                                                 </span>
                                               ) : (
                                                 (answer?.answer_options ?? []).map((optId) => {

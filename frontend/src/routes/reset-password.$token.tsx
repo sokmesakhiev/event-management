@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { Activity, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +17,12 @@ export const Route = createFileRoute("/reset-password/$token")({
   component: ResetPasswordPage,
 });
 
-const passwordSchema = z.string().min(8, "Password must be at least 8 characters").max(72);
+const passwordSchema = z.string().min(8).max(72);
 
 function ResetPasswordPage() {
   const { token } = Route.useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { refresh } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,11 +31,11 @@ function ResetPasswordPage() {
   const handleSubmit = async () => {
     const parsed = passwordSchema.safeParse(password);
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
+      toast.error(t("auth.errors.passwordTooShort"));
       return;
     }
     if (password !== confirmPassword) {
-      toast.error("Passwords don't match");
+      toast.error(t("resetPassword.mismatch"));
       return;
     }
 
@@ -41,10 +43,10 @@ function ResetPasswordPage() {
     try {
       await passwordResetsApi.reset(token, password, confirmPassword);
       await refresh();
-      toast.success("Password updated. Welcome back!");
+      toast.success(t("resetPassword.success"));
       navigate({ to: "/dashboard", replace: true });
     } catch (e: any) {
-      toast.error(e.message ?? "This reset link is invalid or has expired.");
+      toast.error(e.message ?? t("resetPassword.invalidLink"));
     } finally {
       setLoading(false);
     }
@@ -63,32 +65,30 @@ function ResetPasswordPage() {
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-6">
-          <h1 className="font-display text-xl font-bold">Set a new password</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Choose a new password for your account.
-          </p>
+          <h1 className="font-display text-xl font-bold">{t("resetPassword.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("resetPassword.subtitle")}</p>
 
           <div className="mt-6 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">New password</Label>
+              <Label htmlFor="password">{t("resetPassword.newPassword")}</Label>
               <Input
                 id="password"
                 type="password"
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 characters"
+                placeholder={t("auth.fields.passwordPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm">Confirm password</Label>
+              <Label htmlFor="confirm">{t("resetPassword.confirmPassword")}</Label>
               <Input
                 id="confirm"
                 type="password"
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter your new password"
+                placeholder={t("resetPassword.confirmPlaceholder")}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               />
             </div>
@@ -96,11 +96,13 @@ function ResetPasswordPage() {
 
           <Button variant="hero" className="mt-4 w-full" onClick={handleSubmit} disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Update password
+            {t("resetPassword.update")}
           </Button>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            <Link to="/auth" className="hover:text-foreground">← Back to sign in</Link>
+            <Link to="/auth" className="hover:text-foreground">
+              ← {t("forgotPassword.backToSignIn")}
+            </Link>
           </p>
         </div>
       </div>

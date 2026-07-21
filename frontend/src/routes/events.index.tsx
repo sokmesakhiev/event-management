@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, MapPin, ArrowRight, Ticket, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { eventsApi } from "@/lib/api-client";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
@@ -10,23 +11,11 @@ import { formatDateTime, formatPrice, categoryLabel } from "@/lib/event-utils";
 // Only worth showing a filter once there's enough to filter through.
 const FILTER_THRESHOLD = 10;
 
-const valueProps = [
-  {
-    icon: CalendarDays,
-    title: "Real dates, real capacity",
-    desc: "Every listing shows the actual date, location and spots available — no guesswork.",
-  },
-  {
-    icon: Users,
-    title: "Run by your community",
-    desc: "Events here are organized by real people — local clubs, teams and organizers, not brands.",
-  },
-  {
-    icon: Ticket,
-    title: "Register in seconds",
-    desc: "Pick an event, sign up, and get your confirmation instantly. No back-and-forth required.",
-  },
-];
+const VALUE_PROP_ITEMS = [
+  { icon: CalendarDays, key: "realDates" },
+  { icon: Users, key: "community" },
+  { icon: Ticket, key: "registerFast" },
+] as const;
 
 export const Route = createFileRoute("/events/")({
   head: () => ({
@@ -42,6 +31,7 @@ export const Route = createFileRoute("/events/")({
 });
 
 function BrowseEvents() {
+  const { t } = useTranslation();
   const query = useQuery({
     queryKey: ["published-events"],
     queryFn: async () => {
@@ -76,27 +66,27 @@ function BrowseEvents() {
         <section className="border-b border-border pb-10">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Open for registration
+            {t("eventsList.openForRegistration")}
           </span>
           <h1 className="mt-4 font-display text-3xl font-bold md:text-4xl">
-            Discover events worth <span className="text-gradient">showing up for</span>.
+            {t("eventsList.titlePrefix")}{" "}
+            <span className="text-gradient">{t("eventsList.titleHighlight")}</span>.
           </h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            From casual weekend rides to full-distance races, every event below is organized by real
-            people in your community. Browse what&apos;s coming up, check the details that matter —
-            date, location, price and format — and register in seconds. No account needed to look
-            around.
-          </p>
+          <p className="mt-3 max-w-2xl text-muted-foreground">{t("eventsList.subtitle")}</p>
 
           <div className="mt-8 grid gap-6 sm:grid-cols-3">
-            {valueProps.map((v) => (
-              <div key={v.title} className="flex items-start gap-3">
+            {VALUE_PROP_ITEMS.map((item) => (
+              <div key={item.key} className="flex items-start gap-3">
                 <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg [background-image:var(--gradient-hero)] text-primary-foreground">
-                  <v.icon className="h-4 w-4" />
+                  <item.icon className="h-4 w-4" />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold">{v.title}</p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{v.desc}</p>
+                  <p className="text-sm font-semibold">
+                    {t(`eventsList.valueProps.${item.key}.title`)}
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {t(`eventsList.valueProps.${item.key}.desc`)}
+                  </p>
                 </div>
               </div>
             ))}
@@ -104,11 +94,11 @@ function BrowseEvents() {
         </section>
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-          <h2 className="font-display text-xl font-semibold">Upcoming events</h2>
+          <h2 className="font-display text-xl font-semibold">{t("eventsList.upcomingEvents")}</h2>
           {showFilter && (
             <div className="flex flex-wrap gap-2">
               <FilterChip
-                label="All"
+                label={t("eventsList.filterAll")}
                 count={query.data?.length}
                 active={categoryFilter === "all"}
                 onClick={() => setCategoryFilter("all")}
@@ -126,16 +116,12 @@ function BrowseEvents() {
           )}
         </div>
 
-        {query.isLoading && <p className="mt-8 text-muted-foreground">Loading…</p>}
+        {query.isLoading && <p className="mt-8 text-muted-foreground">{t("common.loading")}</p>}
         {query.data?.length === 0 && (
-          <p className="mt-16 text-center text-muted-foreground">
-            No upcoming events yet. Check back soon!
-          </p>
+          <p className="mt-16 text-center text-muted-foreground">{t("eventsList.emptyAll")}</p>
         )}
         {showFilter && filteredEvents?.length === 0 && (
-          <p className="mt-16 text-center text-muted-foreground">
-            No events in this category right now.
-          </p>
+          <p className="mt-16 text-center text-muted-foreground">{t("eventsList.emptyCategory")}</p>
         )}
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
@@ -153,7 +139,7 @@ function BrowseEvents() {
                   <div className="relative h-36 w-full overflow-hidden">
                     <img
                       src={ev.banner_url}
-                      alt={`${ev.title} banner`}
+                      alt={t("common.bannerAlt", { title: ev.title })}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
@@ -168,7 +154,7 @@ function BrowseEvents() {
                     {ev.logo_url && (
                       <img
                         src={ev.logo_url}
-                        alt="Event logo"
+                        alt={t("common.eventLogoAlt")}
                         className="h-8 w-8 rounded-lg border border-border object-cover flex-shrink-0"
                       />
                     )}
@@ -200,7 +186,7 @@ function BrowseEvents() {
                     className="mt-4 inline-flex items-center gap-1 text-sm font-medium transition-transform group-hover:translate-x-1"
                     style={{ color: brandColor }}
                   >
-                    View & register <ArrowRight className="h-4 w-4" />
+                    {t("eventsList.viewAndRegister")} <ArrowRight className="h-4 w-4" />
                   </span>
                 </div>
               </Link>

@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { Activity, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +19,10 @@ export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
 });
 
-const emailSchema = z.string().trim().email("Enter a valid email").max(255);
+const emailSchema = z.string().trim().email().max(255);
 
 function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -28,7 +30,7 @@ function ForgotPasswordPage() {
   const handleSubmit = async () => {
     const parsed = emailSchema.safeParse(email);
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
+      toast.error(t("auth.errors.invalidEmail"));
       return;
     }
 
@@ -37,7 +39,7 @@ function ForgotPasswordPage() {
       await passwordResetsApi.request(parsed.data);
       setSent(true);
     } catch (e: any) {
-      toast.error(e.message ?? "Something went wrong");
+      toast.error(e.message ?? t("common.genericError"));
     } finally {
       setLoading(false);
     }
@@ -58,24 +60,23 @@ function ForgotPasswordPage() {
         {sent ? (
           <div className="rounded-2xl border border-border bg-card p-6 text-center">
             <Check className="mx-auto h-8 w-8 text-primary" />
-            <h1 className="mt-3 font-display text-xl font-bold">Check your email</h1>
+            <h1 className="mt-3 font-display text-xl font-bold">
+              {t("forgotPassword.checkEmailTitle")}
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              If an account exists for <strong>{email}</strong>, we've sent a link to reset your
-              password. It expires in 2 hours.
+              {t("forgotPassword.checkEmailBody", { email })}
             </p>
             <Button asChild variant="outline" className="mt-6 w-full">
-              <Link to="/auth">Back to sign in</Link>
+              <Link to="/auth">{t("forgotPassword.backToSignIn")}</Link>
             </Button>
           </div>
         ) : (
           <div className="rounded-2xl border border-border bg-card p-6">
-            <h1 className="font-display text-xl font-bold">Forgot your password?</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Enter your email and we'll send you a reset link.
-            </p>
+            <h1 className="font-display text-xl font-bold">{t("forgotPassword.title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t("forgotPassword.subtitle")}</p>
 
             <div className="mt-6 space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("auth.fields.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -87,13 +88,20 @@ function ForgotPasswordPage() {
               />
             </div>
 
-            <Button variant="hero" className="mt-4 w-full" onClick={handleSubmit} disabled={loading}>
+            <Button
+              variant="hero"
+              className="mt-4 w-full"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Send reset link
+              {t("forgotPassword.sendLink")}
             </Button>
 
             <p className="mt-6 text-center text-xs text-muted-foreground">
-              <Link to="/auth" className="hover:text-foreground">← Back to sign in</Link>
+              <Link to="/auth" className="hover:text-foreground">
+                ← {t("forgotPassword.backToSignIn")}
+              </Link>
             </p>
           </div>
         )}

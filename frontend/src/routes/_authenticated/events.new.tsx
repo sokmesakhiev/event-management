@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   eventsApi,
   surveysApi,
@@ -26,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EVENT_CATEGORIES } from "@/lib/event-utils";
+import { eventCategoryOptions } from "@/lib/event-utils";
 
 export const Route = createFileRoute("/_authenticated/events/new")({
   head: () => ({ meta: [{ title: "Create event — Rally" }] }),
@@ -47,6 +48,7 @@ const PRESET_COLORS = [
 ];
 
 function NewEvent() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -68,7 +70,7 @@ function NewEvent() {
 
   // Survey fields
   const [hasSurvey, setHasSurvey] = useState(false);
-  const [surveyTitle, setSurveyTitle] = useState("Registration Survey");
+  const [surveyTitle, setSurveyTitle] = useState(t("eventForm.defaultSurveyTitle"));
   const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestionDraft[]>([
     { question_text: "", question_type: "text", options: [], required: false },
   ]);
@@ -113,19 +115,20 @@ function NewEvent() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["my-events"] });
-      toast.success("Draft saved — pick a plan to publish it.");
+      toast.success(t("eventForm.toastDraftSaved"));
       navigate({ to: "/dashboard/events/$eventId", params: { eventId: data.id } });
     },
-    onError: (e: any) => toast.error(e.message ?? "Could not create event"),
+    onError: (e: any) => toast.error(e.message ?? t("eventForm.toastCreateError")),
   });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return toast.error("Add a title");
-    if (!startAt) return toast.error("Add a start date & time");
+    if (!title.trim()) return toast.error(t("eventForm.errorAddTitle"));
+    if (!startAt) return toast.error(t("eventForm.errorAddStart"));
     if (endAt && new Date(endAt) <= new Date(startAt))
-      return toast.error("End time must be after start time");
-    if (isPaid && (!price || Number(price) <= 0)) return toast.error("Add a valid price");
+      return toast.error(t("eventForm.errorEndAfterStart"));
+    if (isPaid && (!price || Number(price) <= 0))
+      return toast.error(t("eventForm.errorValidPrice"));
     mutation.mutate();
   };
 
@@ -135,48 +138,45 @@ function NewEvent() {
       <main className="mx-auto max-w-2xl px-5 py-10">
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link to="/dashboard">
-            <ArrowLeft className="h-4 w-4" /> Back to dashboard
+            <ArrowLeft className="h-4 w-4" /> {t("manageEvent.backToDashboard")}
           </Link>
         </Button>
-        <h1 className="font-display text-3xl font-bold">Create an event</h1>
-        <p className="mt-1 text-muted-foreground">
-          Fill in the details and save it as a draft. You'll pick a plan — which sets your
-          registrant capacity — and publish from the event page.
-        </p>
+        <h1 className="font-display text-3xl font-bold">{t("eventForm.title")}</h1>
+        <p className="mt-1 text-muted-foreground">{t("eventForm.subtitle")}</p>
 
         <form onSubmit={submit} className="mt-8 space-y-5">
           {/* ── Basic details ── */}
           <div className="space-y-2">
-            <Label htmlFor="title">Event title</Label>
+            <Label htmlFor="title">{t("eventForm.eventTitle")}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Sunrise 10K"
+              placeholder={t("eventForm.titlePlaceholder")}
               maxLength={120}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="desc">Description</Label>
+            <Label htmlFor="desc">{t("eventForm.description")}</Label>
             <Textarea
               id="desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Route, what to bring, start line details…"
+              placeholder={t("eventForm.descPlaceholder")}
               rows={4}
             />
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Category</Label>
+              <Label>{t("eventForm.category")}</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {EVENT_CATEGORIES.map((c) => (
+                  {eventCategoryOptions().map((c) => (
                     <SelectItem key={c.value} value={c.value}>
                       {c.label}
                     </SelectItem>
@@ -185,19 +185,19 @@ function NewEvent() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="loc">Location</Label>
+              <Label htmlFor="loc">{t("eventForm.location")}</Label>
               <Input
                 id="loc"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="Central Park, NYC"
+                placeholder={t("eventForm.locationPlaceholder")}
               />
             </div>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="start">Starts</Label>
+              <Label htmlFor="start">{t("eventForm.starts")}</Label>
               <Input
                 id="start"
                 type="datetime-local"
@@ -206,7 +206,7 @@ function NewEvent() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="end">Ends (optional)</Label>
+              <Label htmlFor="end">{t("eventForm.endsOptional")}</Label>
               <Input
                 id="end"
                 type="datetime-local"
@@ -218,15 +218,15 @@ function NewEvent() {
 
           <div className="flex items-center justify-between rounded-xl border border-border p-4">
             <div>
-              <p className="font-medium">Paid event</p>
-              <p className="text-sm text-muted-foreground">Charge participants to register.</p>
+              <p className="font-medium">{t("eventForm.paidEvent")}</p>
+              <p className="text-sm text-muted-foreground">{t("eventForm.paidEventDesc")}</p>
             </div>
             <Switch checked={isPaid} onCheckedChange={setIsPaid} />
           </div>
 
           {isPaid && (
             <div className="space-y-2">
-              <Label htmlFor="price">Price (USD)</Label>
+              <Label htmlFor="price">{t("eventForm.price")}</Label>
               <Input
                 id="price"
                 type="number"
@@ -234,37 +234,39 @@ function NewEvent() {
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder="25.00"
+                placeholder={t("eventForm.pricePlaceholder")}
               />
             </div>
           )}
 
           <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-            Registrant capacity isn't set here — you'll choose a pricing plan (which includes a
-            capacity limit) when you publish this event from its management page.
+            {t("eventForm.capacityNote")}
           </div>
 
           {/* ── Branding ── */}
           <div className="rounded-xl border border-border p-5 space-y-5">
             <div>
-              <h2 className="font-semibold">Branding</h2>
-              <p className="text-sm text-muted-foreground">
-                Personalize your event with a color, banner, and logo.
-              </p>
+              <h2 className="font-semibold">{t("manageEvent.brandingTitle")}</h2>
+              <p className="text-sm text-muted-foreground">{t("eventForm.brandingDesc")}</p>
             </div>
 
             <ImageUpload
               value={bannerUrl}
               onChange={setBannerUrl}
               variant="banner"
-              label="Banner image"
+              label={t("manageEvent.bannerImage")}
             />
 
             <div className="flex flex-wrap gap-6">
-              <ImageUpload value={logoUrl} onChange={setLogoUrl} variant="logo" label="Logo" />
+              <ImageUpload
+                value={logoUrl}
+                onChange={setLogoUrl}
+                variant="logo"
+                label={t("manageEvent.logo")}
+              />
 
               <div className="flex-1 space-y-2 min-w-[160px]">
-                <Label>Brand color</Label>
+                <Label>{t("manageEvent.brandColor")}</Label>
                 <div className="flex flex-wrap gap-2">
                   {PRESET_COLORS.map((c) => (
                     <button
@@ -283,7 +285,7 @@ function NewEvent() {
                   ))}
                   <label
                     className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-border bg-muted text-xs text-muted-foreground hover:border-primary"
-                    title="Custom color"
+                    title={t("manageEvent.customColor")}
                   >
                     <input
                       type="color"
@@ -309,10 +311,8 @@ function NewEvent() {
           <div className="rounded-xl border border-border p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-semibold">Event types / distances</h2>
-                <p className="text-sm text-muted-foreground">
-                  Let participants choose between different options (e.g. 5km, 10km, marathon).
-                </p>
+                <h2 className="font-semibold">{t("eventForm.eventTypesTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("eventForm.eventTypesDesc")}</p>
               </div>
               <Switch checked={hasEventTypes} onCheckedChange={setHasEventTypes} />
             </div>
@@ -330,10 +330,8 @@ function NewEvent() {
           <div className="rounded-xl border border-border p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-semibold">Registration survey</h2>
-                <p className="text-sm text-muted-foreground">
-                  Ask participants questions when they sign up.
-                </p>
+                <h2 className="font-semibold">{t("eventForm.surveyTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("eventForm.surveyDesc")}</p>
               </div>
               <Switch checked={hasSurvey} onCheckedChange={setHasSurvey} />
             </div>
@@ -356,7 +354,7 @@ function NewEvent() {
             disabled={mutation.isPending}
           >
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Save draft
+            {t("eventForm.saveDraft")}
           </Button>
         </form>
       </main>

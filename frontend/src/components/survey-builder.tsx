@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Trash2, GripVertical, ChevronDown } from "lucide-react";
+import { Plus, Trash2, GripVertical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,11 +28,7 @@ function newQuestion(): SurveyQuestionDraft {
   };
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  text: "Text answer",
-  single_choice: "Select one",
-  multiple_choice: "Select many",
-};
+const TYPE_KEYS = ["text", "single_choice", "multiple_choice"] as const;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -47,13 +43,14 @@ function OptionRow({
   onRemove: () => void;
   removable: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-2">
       <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
       <Input
         value={option.label}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Option label"
+        placeholder={t("surveyBuilder.optionLabelPlaceholder")}
         className="h-8 text-sm"
       />
       {removable && (
@@ -82,12 +79,10 @@ function QuestionCard({
   onRemove: () => void;
   removable: boolean;
 }) {
+  const { t } = useTranslation();
   const isChoice = question.question_type !== "text";
 
-  function setField<K extends keyof SurveyQuestionDraft>(
-    key: K,
-    value: SurveyQuestionDraft[K]
-  ) {
+  function setField<K extends keyof SurveyQuestionDraft>(key: K, value: SurveyQuestionDraft[K]) {
     onChange({ ...question, [key]: value });
   }
 
@@ -107,14 +102,14 @@ function QuestionCard({
   function updateOption(id: string, label: string) {
     setField(
       "options",
-      question.options.map((o) => (o.id === id ? { ...o, label } : o))
+      question.options.map((o) => (o.id === id ? { ...o, label } : o)),
     );
   }
 
   function removeOption(id: string) {
     setField(
       "options",
-      question.options.filter((o) => o.id !== id)
+      question.options.filter((o) => o.id !== id),
     );
   }
 
@@ -123,7 +118,7 @@ function QuestionCard({
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <span className="mt-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Q{index + 1}
+          {t("surveyBuilder.questionLabel", { number: index + 1 })}
         </span>
         {removable && (
           <button
@@ -138,25 +133,25 @@ function QuestionCard({
 
       {/* Question text */}
       <div className="space-y-1.5">
-        <Label className="text-xs">Question</Label>
+        <Label className="text-xs">{t("surveyBuilder.question")}</Label>
         <Input
           value={question.question_text}
           onChange={(e) => setField("question_text", e.target.value)}
-          placeholder="e.g. What is your experience level?"
+          placeholder={t("surveyBuilder.questionPlaceholder")}
         />
       </div>
 
       {/* Type selector */}
       <div className="space-y-1.5">
-        <Label className="text-xs">Answer type</Label>
+        <Label className="text-xs">{t("surveyBuilder.answerType")}</Label>
         <Select value={question.question_type} onValueChange={setType}>
           <SelectTrigger className="h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(TYPE_LABELS).map(([value, label]) => (
+            {TYPE_KEYS.map((value) => (
               <SelectItem key={value} value={value}>
-                {label}
+                {t(`surveyBuilder.type.${value}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -166,7 +161,7 @@ function QuestionCard({
       {/* Options list (choice types only) */}
       {isChoice && (
         <div className="space-y-2">
-          <Label className="text-xs">Options</Label>
+          <Label className="text-xs">{t("surveyBuilder.options")}</Label>
           <div className="space-y-1.5">
             {question.options.map((opt) => (
               <OptionRow
@@ -185,18 +180,15 @@ function QuestionCard({
             className="h-7 text-xs gap-1 px-2"
             onClick={addOption}
           >
-            <Plus className="h-3 w-3" /> Add option
+            <Plus className="h-3 w-3" /> {t("surveyBuilder.addOption")}
           </Button>
         </div>
       )}
 
       {/* Required toggle */}
       <div className="flex items-center justify-between pt-1">
-        <Label className="text-xs text-muted-foreground">Required</Label>
-        <Switch
-          checked={question.required}
-          onCheckedChange={(v) => setField("required", v)}
-        />
+        <Label className="text-xs text-muted-foreground">{t("surveyBuilder.required")}</Label>
+        <Switch checked={question.required} onCheckedChange={(v) => setField("required", v)} />
       </div>
     </div>
   );
@@ -219,6 +211,7 @@ export function SurveyBuilder({
   questions,
   onQuestionsChange,
 }: SurveyBuilderProps) {
+  const { t } = useTranslation();
   function addQuestion() {
     onQuestionsChange([...questions, newQuestion()]);
   }
@@ -235,12 +228,12 @@ export function SurveyBuilder({
     <div className="space-y-4">
       {/* Survey title */}
       <div className="space-y-1.5">
-        <Label htmlFor="survey-title">Survey title</Label>
+        <Label htmlFor="survey-title">{t("surveyBuilder.surveyTitle")}</Label>
         <Input
           id="survey-title"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="Registration Survey"
+          placeholder={t("eventForm.defaultSurveyTitle")}
         />
       </div>
 
@@ -258,14 +251,8 @@ export function SurveyBuilder({
         ))}
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="gap-1.5"
-        onClick={addQuestion}
-      >
-        <Plus className="h-4 w-4" /> Add question
+      <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={addQuestion}>
+        <Plus className="h-4 w-4" /> {t("surveyBuilder.addQuestion")}
       </Button>
     </div>
   );
