@@ -3,7 +3,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { eventsApi, surveysApi, type SurveyQuestionDraft, type ApiEventTypeDraft } from "@/lib/api-client";
+import {
+  eventsApi,
+  surveysApi,
+  type SurveyQuestionDraft,
+  type ApiEventTypeDraft,
+} from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
 import { SurveyBuilder } from "@/components/survey-builder";
 import { EventTypeBuilder, newEventType } from "@/components/event-type-builder";
@@ -53,10 +58,8 @@ function NewEvent() {
   const [location, setLocation] = useState("");
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
-  const [capacity, setCapacity] = useState("");
   const [isPaid, setIsPaid] = useState(false);
   const [price, setPrice] = useState("");
-  const [isPublished, setIsPublished] = useState(true);
 
   // Branding fields
   const [brandColor, setBrandColor] = useState("#6366f1");
@@ -87,9 +90,7 @@ function NewEvent() {
 
       // 2. Build event types payload
       const eventTypesAttrs = hasEventTypes
-        ? eventTypes
-            .filter((t) => t.name.trim())
-            .map((t, i) => ({ ...t, position: i }))
+        ? eventTypes.filter((t) => t.name.trim()).map((t, i) => ({ ...t, position: i }))
         : [];
 
       // 3. Create the event
@@ -100,10 +101,8 @@ function NewEvent() {
         location: location.trim() || null,
         start_at: new Date(startAt).toISOString(),
         end_at: endAt ? new Date(endAt).toISOString() : null,
-        capacity: capacity ? Number(capacity) : null,
         price_cents: isPaid ? Math.round(Number(price) * 100) : 0,
         currency: "usd",
-        is_published: isPublished,
         brand_color: brandColor,
         banner_url: bannerUrl,
         logo_url: logoUrl,
@@ -114,7 +113,7 @@ function NewEvent() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["my-events"] });
-      toast.success("Event created!");
+      toast.success("Draft saved — pick a plan to publish it.");
       navigate({ to: "/dashboard/events/$eventId", params: { eventId: data.id } });
     },
     onError: (e: any) => toast.error(e.message ?? "Could not create event"),
@@ -140,7 +139,10 @@ function NewEvent() {
           </Link>
         </Button>
         <h1 className="font-display text-3xl font-bold">Create an event</h1>
-        <p className="mt-1 text-muted-foreground">Fill in the details and open registrations.</p>
+        <p className="mt-1 text-muted-foreground">
+          Fill in the details and save it as a draft. You'll pick a plan — which sets your
+          registrant capacity — and publish from the event page.
+        </p>
 
         <form onSubmit={submit} className="mt-8 space-y-5">
           {/* ── Basic details ── */}
@@ -214,18 +216,6 @@ function NewEvent() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="cap">Capacity (optional)</Label>
-            <Input
-              id="cap"
-              type="number"
-              min="1"
-              value={capacity}
-              onChange={(e) => setCapacity(e.target.value)}
-              placeholder="Unlimited"
-            />
-          </div>
-
           <div className="flex items-center justify-between rounded-xl border border-border p-4">
             <div>
               <p className="font-medium">Paid event</p>
@@ -249,14 +239,9 @@ function NewEvent() {
             </div>
           )}
 
-          <div className="flex items-center justify-between rounded-xl border border-border p-4">
-            <div>
-              <p className="font-medium">Publish now</p>
-              <p className="text-sm text-muted-foreground">
-                Make it visible and open for sign-ups.
-              </p>
-            </div>
-            <Switch checked={isPublished} onCheckedChange={setIsPublished} />
+          <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+            Registrant capacity isn't set here — you'll choose a pricing plan (which includes a
+            capacity limit) when you publish this event from its management page.
           </div>
 
           {/* ── Branding ── */}
@@ -276,12 +261,7 @@ function NewEvent() {
             />
 
             <div className="flex flex-wrap gap-6">
-              <ImageUpload
-                value={logoUrl}
-                onChange={setLogoUrl}
-                variant="logo"
-                label="Logo"
-              />
+              <ImageUpload value={logoUrl} onChange={setLogoUrl} variant="logo" label="Logo" />
 
               <div className="flex-1 space-y-2 min-w-[160px]">
                 <Label>Brand color</Label>
@@ -376,7 +356,7 @@ function NewEvent() {
             disabled={mutation.isPending}
           >
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Create event
+            Save draft
           </Button>
         </form>
       </main>

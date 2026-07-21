@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   Bike,
@@ -10,9 +11,12 @@ import {
   BarChart3,
   Bell,
   ArrowRight,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
+import { eventPlansApi } from "@/lib/api-client";
+import { formatPrice } from "@/lib/event-utils";
 import heroImg from "@/assets/hero-runners.jpg";
 
 export const Route = createFileRoute("/")({
@@ -27,8 +31,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Rally — Create & Join Running Events" },
       {
         property: "og:description",
-        content:
-          "Organize running races, group rides, and community gatherings in minutes.",
+        content: "Organize running races, group rides, and community gatherings in minutes.",
       },
       { property: "og:image", content: heroImg },
       { name: "twitter:image", content: heroImg },
@@ -83,6 +86,14 @@ const steps = [
 ];
 
 function Index() {
+  const plansQuery = useQuery({
+    queryKey: ["event-plans"],
+    queryFn: async () => {
+      const { plans } = await eventPlansApi.list();
+      return plans;
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -112,8 +123,8 @@ function Index() {
             </h1>
             <p className="mt-6 max-w-xl text-lg text-muted-foreground">
               Rally is the easiest way to organize running races, group rides and community
-              gatherings. Set up an event, open registrations and manage the whole day from a
-              single dashboard.
+              gatherings. Set up an event, open registrations and manage the whole day from a single
+              dashboard.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Button asChild variant="hero" size="xl">
@@ -146,7 +157,9 @@ function Index() {
       {/* Event types */}
       <section id="events" className="mx-auto max-w-6xl px-5 py-20">
         <div className="text-center">
-          <h2 className="font-display text-3xl font-bold md:text-4xl">Built for every kind of gathering</h2>
+          <h2 className="font-display text-3xl font-bold md:text-4xl">
+            Built for every kind of gathering
+          </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
             Whether it's a competitive race or a relaxed weekend meetup, Rally has you covered.
           </p>
@@ -175,8 +188,8 @@ function Index() {
               Everything you need to run a great event
             </h2>
             <p className="mt-3 text-muted-foreground">
-              From the first registration to the finish line, Rally handles the logistics so you
-              can focus on the experience.
+              From the first registration to the finish line, Rally handles the logistics so you can
+              focus on the experience.
             </p>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -190,6 +203,59 @@ function Index() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="mx-auto max-w-6xl px-5 py-20">
+        <div className="text-center">
+          <h2 className="font-display text-3xl font-bold md:text-4xl">
+            Simple, transparent pricing
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+            Every event starts as a free draft. When you're ready to open registrations, pick a plan
+            based on how many people you expect — that's what you pay to publish.
+          </p>
+        </div>
+
+        {plansQuery.isLoading && (
+          <p className="mt-12 text-center text-sm text-muted-foreground">Loading plans…</p>
+        )}
+
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+          {plansQuery.data?.map((plan) => {
+            const isFree = plan.price_cents === 0;
+            return (
+              <div
+                key={plan.id}
+                className={`flex flex-col rounded-2xl border p-6 shadow-[var(--shadow-card)] ${
+                  isFree ? "border-primary/40 bg-primary/5" : "border-border bg-card"
+                }`}
+              >
+                {isFree && (
+                  <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
+                    Start here
+                  </span>
+                )}
+                <h3 className="text-lg font-semibold">{plan.label}</h3>
+                <p className="mt-2 font-display text-3xl font-bold">
+                  {isFree ? "Free" : formatPrice(plan.price_cents, "usd")}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">per published event</p>
+                <div className="mt-5 flex items-start gap-2 text-sm">
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>Up to {plan.capacity.toLocaleString()} registrants</span>
+                </div>
+                <div className="mt-2 flex items-start gap-2 text-sm">
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>Full dashboard, branding & QR code</span>
+                </div>
+                <Button asChild variant={isFree ? "hero" : "outline"} size="sm" className="mt-6">
+                  <Link to="/auth">Get started</Link>
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -222,7 +288,11 @@ function Index() {
             Create your first event today. It's free to get started.
           </p>
           <div className="mt-8">
-            <Button asChild size="xl" className="bg-background text-foreground hover:bg-background/90">
+            <Button
+              asChild
+              size="xl"
+              className="bg-background text-foreground hover:bg-background/90"
+            >
               <Link to="/auth">
                 Sign in to get started <ArrowRight className="h-4 w-4" />
               </Link>

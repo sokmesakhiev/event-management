@@ -3,11 +3,10 @@
  * Base URL reads from VITE_API_URL (defaults to http://localhost:3001).
  */
 
-const BASE_URL = (
-  typeof import.meta !== "undefined"
+const BASE_URL =
+  (typeof import.meta !== "undefined"
     ? (import.meta.env?.VITE_API_URL ?? "http://localhost:3001")
-    : (process.env.API_URL ?? "http://localhost:3001")
-) + "/api/v1";
+    : (process.env.API_URL ?? "http://localhost:3001")) + "/api/v1";
 
 const TOKEN_KEY = "rally_token";
 
@@ -55,9 +54,9 @@ async function request<T>(
 }
 
 const api = {
-  get:    <T>(path: string) => request<T>("GET", path),
-  post:   <T>(path: string, body?: unknown) => request<T>("POST", path, body),
-  patch:  <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
+  get: <T>(path: string) => request<T>("GET", path),
+  post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+  patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
   delete: <T>(path: string) => request<T>("DELETE", path),
   upload: <T>(path: string, form: FormData) => request<T>("POST", path, form, true),
 };
@@ -111,8 +110,8 @@ export interface ApiEventType {
   event_id: string;
   name: string;
   description: string | null;
-  capacity: number | null;       // null = unlimited per type
-  price_cents: number | null;    // null = inherit event price
+  capacity: number | null; // null = unlimited per type
+  price_cents: number | null; // null = inherit event price
   position: number;
   spots_remaining: number | null; // null = unlimited
 }
@@ -138,6 +137,8 @@ export interface ApiEvent {
   start_at: string;
   end_at: string | null;
   capacity: number | null;
+  /** Pricing tier this event published under — set once, via publishing. Null while a draft. */
+  plan: string | null;
   price_cents: number;
   currency: string;
   is_published: boolean;
@@ -167,8 +168,22 @@ export interface ApiProfile {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  /** Never the plaintext key — see payway_api_key_masked. */
+  payway_merchant_id: string | null;
+  payway_api_key_masked: string | null;
+  payway_configured: boolean;
   created_at: string | null;
   updated_at: string | null;
+}
+
+/** Payload for PATCH /profile. payway_api_key is write-only — omit it to
+ * leave the saved key untouched, or send "" (with merchant id also blank)
+ * to disconnect PayWay entirely. */
+export interface ProfileUpdatePayload {
+  display_name?: string | null;
+  avatar_url?: string | null;
+  payway_merchant_id?: string;
+  payway_api_key?: string;
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -253,12 +268,37 @@ export const eventsApi = {
     return api.post<{ event: ApiEvent }>("/events", { event: data });
   },
 
-  update(id: string, data: Partial<ApiEvent> & { event_types_attributes?: (ApiEventTypeDraft & { id?: string; _destroy?: boolean })[] }) {
+  update(
+    id: string,
+    data: Partial<ApiEvent> & {
+      event_types_attributes?: (ApiEventTypeDraft & { id?: string; _destroy?: boolean })[];
+    },
+  ) {
     return api.patch<{ event: ApiEvent }>(`/events/${id}`, { event: data });
   },
 
   delete(id: string) {
     return api.delete<{ message: string }>(`/events/${id}`);
+  },
+
+  /** Takes a published event down. Keeps its plan — republishing later is free. */
+  unpublish(id: string) {
+    return api.post<{ event: ApiEvent }>(`/events/${id}/unpublish`);
+  },
+};
+
+// ─── Pricing plans ──────────────────────────────────────────────────────────
+
+export interface ApiEventPlan {
+  id: string;
+  label: string;
+  capacity: number;
+  price_cents: number;
+}
+
+export const eventPlansApi = {
+  list() {
+    return api.get<{ plans: ApiEventPlan[] }>("/event_plans");
   },
 };
 
@@ -311,7 +351,7 @@ export const profileApi = {
     return api.get<{ profile: ApiProfile }>("/profile");
   },
 
-  update(data: Partial<ApiProfile>) {
+  update(data: ProfileUpdatePayload) {
     return api.patch<{ profile: ApiProfile }>("/profile", { profile: data });
   },
 };
@@ -376,14 +416,15 @@ export interface ApiSurveyResponse {
 export const surveyResponsesApi = {
   forEvent(eventId: string) {
     return api.get<{ survey: ApiSurvey; responses: ApiSurveyResponse[] }>(
-      `/events/${eventId}/survey_responses`
+      `/events/${eventId}/survey_responses`,
     );
   },
 };
 
 // ─── Payments (ABA PayWay KHQR) ────────────────────────────────────────────────
 
-export type PaymentStatus = "pending" | "approved" | "declined" | "cancelled" | "expired" | "refunded";
+export type PaymentStatus =
+  "pending" | "approved" | "declined" | "cancelled" | "expired" | "refunded";
 
 export interface ApiPayment {
   id: string;
@@ -405,5 +446,39 @@ export const paymentsApi = {
 
   status(paymentId: string) {
     return api.get<{ payment: ApiPayment }>(`/payments/${paymentId}`);
+  },
+};
+
+// ─── Event plan payments (organizer pays to publish) ───────────────────────
+
+export type PlanPaymentStatus = "pending" | "paid" | "declined" | "cancelled" | "expired";
+
+export interface ApiEventPlanPayment {
+  id: string;
+  event_id: string;
+  plan: string;
+  status: PlanPaymentStatus;
+  amount_cents: number;
+  currency: string;
+  qr_string: string | null;
+  abapay_deeplink: string | null;
+  expires_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export const eventPlanPaymentsApi = {
+  /** Starts (or, for the free tier / a re-pick of the same plan, completes) publishing. */
+  create(eventId: string, plan: string) {
+    return api.post<{ plan_payment?: ApiEventPlanPayment; event?: ApiEvent }>(
+      `/events/${eventId}/plan_payments`,
+      { plan },
+    );
+  },
+
+  status(planPaymentId: string) {
+    return api.get<{ plan_payment: ApiEventPlanPayment; event: ApiEvent }>(
+      `/plan_payments/${planPaymentId}`,
+    );
   },
 };

@@ -20,13 +20,29 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-          <Link to="/events" className="transition-colors hover:text-foreground">Browse events</Link>
+          <Link to="/events" className="transition-colors hover:text-foreground">
+            Browse events
+          </Link>
           {user ? (
-            <Link to="/dashboard" className="transition-colors hover:text-foreground">Dashboard</Link>
+            <>
+              <Link to="/dashboard" className="transition-colors hover:text-foreground">
+                Dashboard
+              </Link>
+              <Link to="/profile" className="transition-colors hover:text-foreground">
+                Profile
+              </Link>
+            </>
           ) : (
             <>
-              <a href="/#features" className="transition-colors hover:text-foreground">Features</a>
-              <a href="/#how" className="transition-colors hover:text-foreground">How it works</a>
+              <a href="/#features" className="transition-colors hover:text-foreground">
+                Features
+              </a>
+              <a href="/#pricing" className="transition-colors hover:text-foreground">
+                Pricing
+              </a>
+              <a href="/#how" className="transition-colors hover:text-foreground">
+                How it works
+              </a>
             </>
           )}
         </nav>

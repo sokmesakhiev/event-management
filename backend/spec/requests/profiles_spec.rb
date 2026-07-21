@@ -48,5 +48,54 @@ RSpec.describe "Profiles API", type: :request do
       patch "/api/v1/profile", params: { profile: { display_name: "X" } }, as: :json
       expect(response).to have_http_status(:unauthorized)
     end
+
+    # ── PayWay credentials ─────────────────────────────────────────────────────
+    it "saves PayWay credentials and returns a masked key, never the plaintext" do
+      patch "/api/v1/profile",
+            params: { profile: { payway_merchant_id: "merchant_123", payway_api_key: "secret_abcdef1234" } },
+            headers: auth_headers(user),
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["profile"]["payway_merchant_id"]).to eq("merchant_123")
+      expect(json["profile"]["payway_configured"]).to eq(true)
+      expect(json["profile"]["payway_api_key_masked"]).to eq("••••••••1234")
+      expect(response.body).not_to include("secret_abcdef1234")
+      expect(user.profile.reload.payway_api_key).to eq("secret_abcdef1234")
+    end
+
+    it "leaves the saved api key untouched when the field is omitted" do
+      user.profile.update!(payway_merchant_id: "merchant_123", payway_api_key: "secret_abcdef1234")
+
+      patch "/api/v1/profile",
+            params: { profile: { display_name: "New Name" } },
+            headers: auth_headers(user),
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(user.profile.reload.payway_api_key).to eq("secret_abcdef1234")
+    end
+
+    it "disconnects PayWay when both fields are submitted blank" do
+      user.profile.update!(payway_merchant_id: "merchant_123", payway_api_key: "secret_abcdef1234")
+
+      patch "/api/v1/profile",
+            params: { profile: { payway_merchant_id: "", payway_api_key: "" } },
+            headers: auth_headers(user),
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["profile"]["payway_configured"]).to eq(false)
+      expect(user.profile.reload.payway_api_key).to be_nil
+    end
+
+    it "rejects a merchant id without an api key" do
+      patch "/api/v1/profile",
+            params: { profile: { payway_merchant_id: "merchant_123" } },
+            headers: auth_headers(user),
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
   end
 end

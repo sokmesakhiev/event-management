@@ -33,7 +33,7 @@ module Api
 
         begin
           profile = current_user.profile
-          response = AbaPayway::Client.new.generate_qr(
+          response = AbaPayway::Client.for_event(registration.event).generate_qr(
             tran_id: tran_id,
             amount_cents: amount_cents,
             currency: currency,
@@ -95,7 +95,7 @@ module Api
         return if payment.updated_at > 5.seconds.ago
 
         begin
-          response = AbaPayway::Client.new.check_transaction(tran_id: payment.tran_id)
+          response = AbaPayway::Client.for_event(payment.registration.event).check_transaction(tran_id: payment.tran_id)
         rescue AbaPayway::Error
           return # transient network/API error — keep current status, try again next poll
         end

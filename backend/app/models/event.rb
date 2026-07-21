@@ -3,6 +3,7 @@ class Event < ApplicationRecord
   belongs_to :survey, optional: true
   has_many :registrations, dependent: :destroy
   has_many :event_types, -> { order(position: :asc) }, dependent: :destroy
+  has_many :event_plan_payments, dependent: :destroy
 
   accepts_nested_attributes_for :event_types,
     allow_destroy: true,
@@ -13,16 +14,33 @@ class Event < ApplicationRecord
 
   CATEGORIES = %w[running cycling swimming triathlon hiking other].freeze
 
+  # Organizer-facing pricing tiers. Publishing an event requires picking one
+  # of these — it sets the event's capacity and (for paid tiers) requires an
+  # EventPlanPayment before is_published can flip to true. Order matters: it
+  # drives display order on the pricing page and in the publish flow.
+  PLANS = {
+    "free" =>        { label: "Free",        capacity: 20,     price_cents: 0 },
+    "small" =>       { label: "Small",       capacity: 200,    price_cents: 10_000 },
+    "medium" =>      { label: "Medium",      capacity: 1_000,  price_cents: 30_000 },
+    "large" =>       { label: "Large",       capacity: 10_000, price_cents: 100_000 },
+    "extra_large" => { label: "Extra Large", capacity: 30_000, price_cents: 200_000 },
+  }.freeze
+
   validates :title, presence: true, length: { maximum: 120 }
   validates :category, inclusion: { in: CATEGORIES }
   validates :start_at, presence: true
   validates :price_cents, numericality: { greater_than_or_equal_to: 0 }
+  validates :plan, inclusion: { in: PLANS.keys }, allow_nil: true
   validate :end_after_start
 
   before_validation :default_price_cents
 
   scope :published, -> { where(is_published: true) }
   scope :upcoming, -> { where("start_at >= ?", Time.current) }
+
+  def plan_details
+    PLANS[plan]
+  end
 
   private
 

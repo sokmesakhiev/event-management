@@ -21,7 +21,9 @@ module Api
       private
 
       def profile_params
-        params.require(:profile).permit(:display_name, :avatar_url)
+        params.require(:profile).permit(
+          :display_name, :avatar_url, :payway_merchant_id, :payway_api_key
+        )
       end
 
       def profile_json(profile)
@@ -30,6 +32,10 @@ module Api
           user_id: current_user.id,
           display_name: profile&.display_name,
           avatar_url: profile&.avatar_url,
+          # Never the plaintext key — only enough to confirm what's saved.
+          payway_merchant_id: profile&.payway_merchant_id,
+          payway_api_key_masked: profile&.payway_api_key_masked,
+          payway_configured: profile&.payway_configured? || false,
           created_at: profile&.created_at,
           updated_at: profile&.updated_at
         }

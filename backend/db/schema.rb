@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_10_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_050000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -43,6 +43,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_10_000002) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "event_plan_payments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "abapay_deeplink"
+    t.integer "amount_cents", null: false
+    t.datetime "created_at", null: false
+    t.string "currency", default: "usd", null: false
+    t.uuid "event_id", null: false
+    t.datetime "expires_at"
+    t.datetime "paid_at"
+    t.string "plan", null: false
+    t.string "provider", default: "aba_payway", null: false
+    t.text "qr_string"
+    t.jsonb "raw_response", default: {}, null: false
+    t.string "status", default: "pending", null: false
+    t.string "tran_id", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "user_id", null: false
+    t.index ["event_id", "status"], name: "index_event_plan_payments_on_event_id_and_status"
+    t.index ["event_id"], name: "index_event_plan_payments_on_event_id"
+    t.index ["tran_id"], name: "index_event_plan_payments_on_tran_id", unique: true
+  end
+
   create_table "event_types", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.integer "capacity"
     t.datetime "created_at", null: false
@@ -69,6 +90,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_10_000002) do
     t.boolean "is_published", default: false, null: false
     t.string "location"
     t.string "logo_url"
+    t.string "plan"
     t.integer "price_cents", default: 0, null: false
     t.datetime "start_at", null: false
     t.uuid "survey_id"
@@ -81,6 +103,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_10_000002) do
   end
 
   create_table "payments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "abapay_deeplink"
     t.integer "amount_cents", null: false
     t.datetime "created_at", null: false
     t.string "currency", default: "usd", null: false
@@ -88,7 +111,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_10_000002) do
     t.datetime "paid_at"
     t.string "provider", default: "aba_payway", null: false
     t.text "qr_string"
-    t.text "abapay_deeplink"
     t.jsonb "raw_response", default: {}, null: false
     t.uuid "registration_id", null: false
     t.string "status", default: "pending", null: false
@@ -103,6 +125,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_10_000002) do
     t.string "avatar_url"
     t.datetime "created_at", null: false
     t.string "display_name"
+    t.text "payway_api_key"
+    t.string "payway_merchant_id"
     t.datetime "updated_at", null: false
     t.uuid "user_id", null: false
     t.index ["user_id"], name: "index_profiles_on_user_id", unique: true
@@ -181,6 +205,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_10_000002) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "event_plan_payments", "events"
+  add_foreign_key "event_plan_payments", "users"
   add_foreign_key "event_types", "events"
   add_foreign_key "events", "surveys"
   add_foreign_key "events", "users", column: "creator_id"

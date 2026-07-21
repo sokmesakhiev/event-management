@@ -28,7 +28,9 @@ export function formatDate(iso: string): string {
 export const EVENT_CATEGORIES = [
   { value: "running", label: "Running" },
   { value: "cycling", label: "Cycling" },
-  { value: "gathering", label: "Gathering" },
+  { value: "swimming", label: "Swimming" },
+  { value: "triathlon", label: "Triathlon" },
+  { value: "hiking", label: "Hiking" },
   { value: "other", label: "Other" },
 ] as const;
 

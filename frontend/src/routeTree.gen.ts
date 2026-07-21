@@ -18,9 +18,10 @@ import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as VerifyEmailTokenRouteImport } from './routes/verify-email.$token'
 import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password.$token'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEventsNewRouteImport } from './routes/_authenticated/events.new'
-import { Route as AuthenticatedDashboardEventsEventIdRouteImport } from './routes/_authenticated/dashboard.events.$eventId'
+import { Route as AuthenticatedDashboardEventsEventIdRouteImport } from './routes/_authenticated/dashboard_.events.$eventId'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -66,6 +67,11 @@ const EventsEventIdRoute = EventsEventIdRouteImport.update({
   path: '/events/$eventId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -78,9 +84,9 @@ const AuthenticatedEventsNewRoute = AuthenticatedEventsNewRouteImport.update({
 } as any)
 const AuthenticatedDashboardEventsEventIdRoute =
   AuthenticatedDashboardEventsEventIdRouteImport.update({
-    id: '/events/$eventId',
-    path: '/events/$eventId',
-    getParentRoute: () => AuthenticatedDashboardRoute,
+    id: '/dashboard_/events/$eventId',
+    path: '/dashboard/events/$eventId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -88,7 +94,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/verify-email/$token': typeof VerifyEmailTokenRoute
@@ -101,7 +108,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/verify-email/$token': typeof VerifyEmailTokenRoute
@@ -116,13 +124,14 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/verify-email/$token': typeof VerifyEmailTokenRoute
   '/events/': typeof EventsIndexRoute
   '/_authenticated/events/new': typeof AuthenticatedEventsNewRoute
-  '/_authenticated/dashboard/events/$eventId': typeof AuthenticatedDashboardEventsEventIdRoute
+  '/_authenticated/dashboard_/events/$eventId': typeof AuthenticatedDashboardEventsEventIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/sitemap.xml'
     | '/dashboard'
+    | '/profile'
     | '/events/$eventId'
     | '/reset-password/$token'
     | '/verify-email/$token'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/sitemap.xml'
     | '/dashboard'
+    | '/profile'
     | '/events/$eventId'
     | '/reset-password/$token'
     | '/verify-email/$token'
@@ -159,12 +170,13 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/sitemap.xml'
     | '/_authenticated/dashboard'
+    | '/_authenticated/profile'
     | '/events/$eventId'
     | '/reset-password/$token'
     | '/verify-email/$token'
     | '/events/'
     | '/_authenticated/events/new'
-    | '/_authenticated/dashboard/events/$eventId'
+    | '/_authenticated/dashboard_/events/$eventId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -258,39 +277,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEventsNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/dashboard/events/$eventId': {
-      id: '/_authenticated/dashboard/events/$eventId'
-      path: '/events/$eventId'
+    '/_authenticated/dashboard_/events/$eventId': {
+      id: '/_authenticated/dashboard_/events/$eventId'
+      path: '/dashboard/events/$eventId'
       fullPath: '/dashboard/events/$eventId'
       preLoaderRoute: typeof AuthenticatedDashboardEventsEventIdRouteImport
-      parentRoute: typeof AuthenticatedDashboardRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedDashboardRouteChildren {
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedEventsNewRoute: typeof AuthenticatedEventsNewRoute
   AuthenticatedDashboardEventsEventIdRoute: typeof AuthenticatedDashboardEventsEventIdRoute
 }
 
-const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
-  {
-    AuthenticatedDashboardEventsEventIdRoute:
-      AuthenticatedDashboardEventsEventIdRoute,
-  }
-
-const AuthenticatedDashboardRouteWithChildren =
-  AuthenticatedDashboardRoute._addFileChildren(
-    AuthenticatedDashboardRouteChildren,
-  )
-
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRouteWithChildren
-  AuthenticatedEventsNewRoute: typeof AuthenticatedEventsNewRoute
-}
-
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRouteWithChildren,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedEventsNewRoute: AuthenticatedEventsNewRoute,
+  AuthenticatedDashboardEventsEventIdRoute:
+    AuthenticatedDashboardEventsEventIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

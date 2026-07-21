@@ -8,17 +8,19 @@ module Api
       # server-to-server Check Transaction call, never from the payload alone.
       class AbaPaywayController < ApplicationController
         # POST /api/v1/webhooks/aba_payway
+        # Handles both kinds of ABA payment in this app: participant
+        # registration payments (Payment, tran_id prefix "rly") and
+        # organizer publish-plan payments (EventPlanPayment, prefix "pln").
         def create
           tran_id = params[:merchant_ref].presence || params[:tran_id].presence
+          payable = tran_id.present? ? (Payment.find_by(tran_id: tran_id) || EventPlanPayment.find_by(tran_id: tran_id)) : nil
 
-          payment = tran_id.present? ? Payment.find_by(tran_id: tran_id) : nil
-
-          if payment.nil?
+          if payable.nil?
             Rails.logger.warn("[aba_payway webhook] unknown tran_id=#{tran_id.inspect}")
             head :ok and return
           end
 
-          verify_and_apply!(payment)
+          verify_and_apply!(payable)
 
           head :ok
         rescue => e
@@ -30,18 +32,27 @@ module Api
 
         private
 
-        def verify_and_apply!(payment)
-          return unless payment.pending?
+        def verify_and_apply!(payable)
+          return unless payable.pending?
 
-          response = AbaPayway::Client.new.check_transaction(tran_id: payment.tran_id)
+          # Payment (attendee → organizer) may have been created under the
+          # organizer's own PayWay credentials; EventPlanPayment (organizer →
+          # Rally) always uses Rally's platform credentials.
+          client = payable.is_a?(Payment) ? AbaPayway::Client.for_event(payable.registration.event) : AbaPayway::Client.new
+          response = client.check_transaction(tran_id: payable.tran_id)
           return unless response.dig(:status, :code).to_s == "00"
 
           data = response[:data] || {}
           return unless data[:payment_status] == "APPROVED"
 
-          payment.update!(status: "approved", paid_at: Time.current, raw_response: response)
-          payment.registration.mark_paid_from_payment!(payment)
-          RegistrationMailer.payment_received(payment.registration).deliver_later
+          case payable
+          when Payment
+            payable.update!(status: "approved", paid_at: Time.current, raw_response: response)
+            payable.registration.mark_paid_from_payment!(payable)
+            RegistrationMailer.payment_received(payable.registration).deliver_later
+          when EventPlanPayment
+            payable.mark_paid!(raw_response: response)
+          end
         rescue AbaPayway::Error => e
           Rails.logger.error("[aba_payway webhook] check_transaction failed: #{e.message}")
         end

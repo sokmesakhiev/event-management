@@ -1,9 +1,9 @@
 # ── General ───────────────────────────────────────────────────────────────────
 
 variable "aws_region" {
-  description = "AWS region for all resources (except CloudFront ACM which is always us-east-1)"
+  description = "AWS region for all resources (except CloudFront ACM which is always ap-southeast-1)"
   type        = string
-  default     = "us-east-1"
+  default     = "ap-southeast-1"
 }
 
 variable "environment" {

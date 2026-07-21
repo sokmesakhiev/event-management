@@ -1,9 +1,9 @@
 module Api
   module V1
     class EventsController < ApplicationController
-      before_action :authenticate_user!, only: [ :create, :update, :destroy, :my_events ]
-      before_action :set_event, only: [ :show, :update, :destroy ]
-      before_action :authorize_creator!, only: [ :update, :destroy ]
+      before_action :authenticate_user!, only: [ :create, :update, :destroy, :my_events, :unpublish ]
+      before_action :set_event, only: [ :show, :update, :destroy, :unpublish ]
+      before_action :authorize_creator!, only: [ :update, :destroy, :unpublish ]
 
       # GET /api/v1/events — public, published, upcoming
       def index
@@ -52,6 +52,14 @@ module Api
         render json: { message: "Event deleted" }
       end
 
+      # POST /api/v1/events/:id/unpublish
+      # Takes an event down without affecting its paid plan — republishing
+      # under the same plan later is free (see EventPlanPaymentsController).
+      def unpublish
+        @event.update!(is_published: false)
+        render json: { event: event_json(@event, include_types: true) }
+      end
+
       private
 
       def set_event
@@ -66,11 +74,14 @@ module Api
         end
       end
 
+      # `is_published` and `capacity` are intentionally excluded — they're
+      # only ever set via the paid publish flow (EventPlanPaymentsController)
+      # or #unpublish, never directly. See Event::PLANS.
       def event_params
         params.require(:event).permit(
           :title, :description, :category, :location,
-          :start_at, :end_at, :capacity, :price_cents, :currency,
-          :is_published, :brand_color, :banner_url, :logo_url, :survey_id,
+          :start_at, :end_at, :price_cents, :currency,
+          :brand_color, :banner_url, :logo_url, :survey_id,
           event_types_attributes: [
             :id, :name, :description, :capacity, :price_cents, :position, :_destroy
           ]
@@ -89,6 +100,7 @@ module Api
           start_at: event.start_at,
           end_at: event.end_at,
           capacity: event.capacity,
+          plan: event.plan,
           price_cents: event.price_cents,
           currency: event.currency,
           is_published: event.is_published,

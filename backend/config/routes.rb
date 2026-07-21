@@ -22,12 +22,18 @@ Rails.application.routes.draw do
       get  "email_verifications/:token", to: "email_verifications#show"
 
       # Events
-      get    "events",       to: "events#index"
-      get    "events/my",    to: "events#my_events"
-      post   "events",       to: "events#create"
-      get    "events/:id",   to: "events#show"
-      patch  "events/:id",   to: "events#update"
-      delete "events/:id",   to: "events#destroy"
+      get    "events",               to: "events#index"
+      get    "events/my",            to: "events#my_events"
+      post   "events",               to: "events#create"
+      get    "events/:id",           to: "events#show"
+      patch  "events/:id",           to: "events#update"
+      delete "events/:id",           to: "events#destroy"
+      post   "events/:id/unpublish", to: "events#unpublish"
+
+      # Pricing plans (organizer pays to publish — see Event::PLANS)
+      get  "event_plans",                    to: "event_plans#index"
+      post "events/:event_id/plan_payments", to: "event_plan_payments#create"
+      get  "plan_payments/:id",              to: "event_plan_payments#show"
 
       # Registrations
       get    "registrations",                  to: "registrations#index"

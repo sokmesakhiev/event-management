@@ -28,6 +28,26 @@ module AbaPayway
       @base_url = base_url.to_s.chomp("/")
     end
 
+    class << self
+      # Builds a client for a registration payment (attendee → organizer) on
+      # the given event. Uses the event creator's own PayWay credentials when
+      # they've connected one via their profile (Profile#payway_configured?),
+      # so the money lands directly in the organizer's PayWay account;
+      # otherwise falls back to the platform's default credentials (ENV).
+      #
+      # Organizer "pay to publish" charges (EventPlanPayment — organizer →
+      # Rally) must never use this; they should always use `Client.new` with
+      # no args so proceeds go to Rally's own account.
+      def for_event(event)
+        profile = event.creator&.profile
+        if profile&.payway_configured?
+          new(merchant_id: profile.payway_merchant_id, api_key: profile.payway_api_key)
+        else
+          new
+        end
+      end
+    end
+
     # Generates a dynamic ABA KHQR code for a purchase.
     #
     # Returns a hash with the parsed PayWay response (qrString, qrImage,

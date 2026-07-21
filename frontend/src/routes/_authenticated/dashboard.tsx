@@ -86,6 +86,9 @@ function Dashboard() {
           {/* Participating */}
           <TabsContent value="participating" className="mt-6 space-y-4">
             {participating.isLoading && <p className="text-muted-foreground">Loading…</p>}
+            {participating.isError && (
+              <p className="text-sm text-destructive">Couldn't load your registrations.</p>
+            )}
             {participating.data?.length === 0 && (
               <EmptyState
                 icon={Ticket}
@@ -148,6 +151,12 @@ function Dashboard() {
           {/* Created */}
           <TabsContent value="created" className="mt-6 space-y-4">
             {created.isLoading && <p className="text-muted-foreground">Loading…</p>}
+            {created.isError && (
+              <p className="text-sm text-destructive">
+                Couldn't load your events. Check that the backend is running and up to date
+                (pending migrations?), then refresh.
+              </p>
+            )}
             {created.data?.length === 0 && (
               <EmptyState
                 icon={CalendarPlus}

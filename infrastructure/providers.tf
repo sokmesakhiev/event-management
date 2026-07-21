@@ -17,7 +17,7 @@ terraform {
   #
   #   aws s3api create-bucket \
   #     --bucket <YOUR_BUCKET_NAME> \
-  #     --region us-east-1
+  #     --region ap-southeast-1
   #
   #   aws s3api put-bucket-versioning \
   #     --bucket <YOUR_BUCKET_NAME> \
@@ -27,7 +27,7 @@ terraform {
   #   terraform init \
   #     -backend-config="bucket=<YOUR_BUCKET_NAME>" \
   #     -backend-config="key=event-management/production/terraform.tfstate" \
-  #     -backend-config="region=us-east-1"
+  #     -backend-config="region=ap-southeast-1"
   #
   backend "s3" {
     encrypt = true
@@ -48,10 +48,10 @@ provider "aws" {
   }
 }
 
-# ── us-east-1 alias ── CloudFront ACM certificates MUST live in us-east-1
+# ── ap-southeast-1 alias ── CloudFront ACM certificates MUST live in ap-southeast-1
 provider "aws" {
   alias  = "us_east_1"
-  region = "us-east-1"
+  region = "ap-southeast-1"
 
   default_tags {
     tags = {

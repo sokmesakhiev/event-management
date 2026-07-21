@@ -49,16 +49,16 @@ ECS_SERVICE=$(tf_output ecs_service_name)
 FRONTEND_BUCKET=$(tf_output frontend_bucket_name)
 CLOUDFRONT_ID=$(tf_output cloudfront_distribution_id)
 API_URL=$(tf_output api_url)
-AWS_REGION=$(terraform output -raw alb_dns_name 2>/dev/null | grep -o 'us-[a-z]*-[0-9]' || echo "${AWS_DEFAULT_REGION:-us-east-1}")
+AWS_REGION=$(terraform output -raw alb_dns_name 2>/dev/null | grep -o 'us-[a-z]*-[0-9]' || echo "${AWS_DEFAULT_REGION:-ap-southeast-1}")
 
 # Also read region from provider config
-AWS_REGION=$(terraform show -json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('values',{}).get('root_module',{}).get('resources',[{}])[0].get('provider_name','aws.us_east_1').split('.')[-1])" 2>/dev/null || echo "us-east-1")
+AWS_REGION=$(terraform show -json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('values',{}).get('root_module',{}).get('resources',[{}])[0].get('provider_name','aws.us_east_1').split('.')[-1])" 2>/dev/null || echo "ap-southeast-1")
 
 # Fall back to reading from variables
 if [[ -f "$TF_DIR/terraform.tfvars" ]]; then
-  AWS_REGION=$(grep -E '^aws_region' "$TF_DIR/terraform.tfvars" | awk -F'"' '{print $2}' || echo "us-east-1")
+  AWS_REGION=$(grep -E '^aws_region' "$TF_DIR/terraform.tfvars" | awk -F'"' '{print $2}' || echo "ap-southeast-1")
 fi
-AWS_REGION="${AWS_REGION:-us-east-1}"
+AWS_REGION="${AWS_REGION:-ap-southeast-1}"
 
 cd "$ROOT_DIR"
 

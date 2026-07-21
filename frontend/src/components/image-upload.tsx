@@ -7,22 +7,17 @@ import { cn } from "@/lib/utils";
 interface ImageUploadProps {
   value: string | null;
   onChange: (url: string | null) => void;
-  /** "banner" renders as a wide 16:5 container; "logo" renders as a square */
-  variant?: "banner" | "logo";
+  /** "banner" renders as a wide 16:5 container; "logo"/"avatar" render as a square */
+  variant?: "banner" | "logo" | "avatar";
   label?: string;
 }
 
-export function ImageUpload({
-  value,
-  onChange,
-  variant = "banner",
-  label,
-}: ImageUploadProps) {
+export function ImageUpload({ value, onChange, variant = "banner", label }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isLogo = variant === "logo";
+  const isLogo = variant !== "banner";
 
   async function handleFile(file: File) {
     setError(null);
@@ -53,9 +48,10 @@ export function ImageUpload({
       {label && <p className="text-sm font-medium">{label}</p>}
       <div
         className={cn(
-          "relative overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted/40 transition-colors hover:border-primary/50",
+          "relative overflow-hidden border-2 border-dashed border-border bg-muted/40 transition-colors hover:border-primary/50",
+          variant === "avatar" ? "rounded-full" : "rounded-xl",
           isLogo ? "h-24 w-24" : "h-36 w-full",
-          uploading && "pointer-events-none opacity-60"
+          uploading && "pointer-events-none opacity-60",
         )}
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
@@ -66,11 +62,7 @@ export function ImageUpload({
       >
         {value ? (
           <>
-            <img
-              src={value}
-              alt="Upload preview"
-              className="h-full w-full object-cover"
-            />
+            <img src={value} alt="Upload preview" className="h-full w-full object-cover" />
             {/* Remove button */}
             <button
               type="button"
@@ -90,9 +82,7 @@ export function ImageUpload({
             ) : (
               <>
                 <Upload className="h-5 w-5" />
-                {!isLogo && (
-                  <p className="text-xs">Click or drag to upload</p>
-                )}
+                {!isLogo && <p className="text-xs">Click or drag to upload</p>}
               </>
             )}
           </div>

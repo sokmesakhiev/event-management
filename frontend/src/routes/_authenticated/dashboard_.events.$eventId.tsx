@@ -16,13 +16,22 @@ import {
   QrCode,
   ClipboardList,
   MessageSquare,
+  Rocket,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
-import { eventsApi, registrationsApi, surveyResponsesApi, type ApiSurveyResponse } from "@/lib/api-client";
+import {
+  eventsApi,
+  registrationsApi,
+  surveyResponsesApi,
+  eventPlansApi,
+  type ApiSurveyResponse,
+} from "@/lib/api-client";
 import { useAuth } from "@/lib/use-auth";
 import { SiteHeader } from "@/components/site-header";
 import { EventQRCode } from "@/components/event-qr-code";
 import { ImageUpload } from "@/components/image-upload";
+import { PlanPaymentPanel } from "@/components/plan-payment-panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -41,15 +50,22 @@ import {
 import { formatDateTime, formatPrice, categoryLabel } from "@/lib/event-utils";
 import { downloadICS } from "@/lib/ics";
 
-export const Route = createFileRoute("/_authenticated/dashboard/events/$eventId")({
+export const Route = createFileRoute("/_authenticated/dashboard_/events/$eventId")({
   head: () => ({ meta: [{ title: "Manage event — Rally" }] }),
   component: ManageEvent,
 });
 
 const PRESET_COLORS = [
-  "#6366f1", "#8b5cf6", "#ec4899", "#ef4444",
-  "#f97316", "#eab308", "#22c55e", "#06b6d4",
-  "#0ea5e9", "#64748b",
+  "#6366f1",
+  "#8b5cf6",
+  "#ec4899",
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#06b6d4",
+  "#0ea5e9",
+  "#64748b",
 ];
 
 function ManageEvent() {
@@ -134,6 +150,27 @@ function ManageEvent() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // ── Publishing (pricing plan + payment) ──
+  const plansQuery = useQuery({
+    queryKey: ["event-plans"],
+    queryFn: async () => {
+      const { plans } = await eventPlansApi.list();
+      return plans;
+    },
+    enabled: !!ev && !ev.is_published,
+  });
+
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  const unpublishEvent = useMutation({
+    mutationFn: () => eventsApi.unpublish(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+      toast.success("Event unpublished");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const participants = participantsQuery.data ?? [];
   const paidCount = participants.filter((p) => p.payment_status === "paid").length;
   const revenue = participants.reduce((sum, p) => sum + (p.amount_paid_cents ?? 0), 0);
@@ -151,6 +188,23 @@ function ManageEvent() {
         </Button>
 
         {eventQuery.isLoading && <p className="text-muted-foreground">Loading…</p>}
+        {eventQuery.isError && (
+          <div className="mt-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+            <p className="font-medium text-destructive">Couldn't load this event.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {(eventQuery.error as any)?.message ??
+                "Something went wrong talking to the API. Check that the backend is running and up to date (pending migrations?), then try again."}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={() => eventQuery.refetch()}
+            >
+              Try again
+            </Button>
+          </div>
+        )}
         {ev && (
           <>
             {/* Header */}
@@ -175,6 +229,21 @@ function ManageEvent() {
                 <Button variant="outline" size="sm" onClick={() => downloadICS(ev)}>
                   <Download className="h-4 w-4" /> .ics
                 </Button>
+                {ev.is_published && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => unpublishEvent.mutate()}
+                    disabled={unpublishEvent.isPending}
+                  >
+                    {unpublishEvent.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                    Unpublish
+                  </Button>
+                )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm">
@@ -200,6 +269,68 @@ function ManageEvent() {
               </div>
             </div>
 
+            {/* Publish (pricing plan) */}
+            {!ev.is_published && (
+              <div className="mt-8 rounded-2xl border border-primary/30 bg-primary/5 p-6">
+                <div className="flex items-center gap-2">
+                  <Rocket className="h-5 w-5 text-primary" />
+                  <h2 className="font-semibold">Publish this event</h2>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  This event is a draft — only you can see it. Pick a plan to open registrations.
+                  Your plan sets how many people can register.
+                  {ev.plan && (
+                    <>
+                      {" "}
+                      You previously picked <strong>{ev.plan.replace("_", " ")}</strong> —
+                      republishing under it is free.
+                    </>
+                  )}
+                </p>
+
+                {selectedPlan ? (
+                  <div className="mt-5 rounded-xl border border-border bg-card p-5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium capitalize">
+                        {selectedPlan.replace("_", " ")} plan
+                      </p>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedPlan(null)}>
+                        Change plan
+                      </Button>
+                    </div>
+                    <PlanPaymentPanel
+                      eventId={eventId}
+                      plan={selectedPlan}
+                      brandColor={activeBrandColor}
+                      onPublished={() => setSelectedPlan(null)}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    {plansQuery.isLoading && (
+                      <p className="text-sm text-muted-foreground">Loading plans…</p>
+                    )}
+                    {plansQuery.data?.map((plan) => (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => setSelectedPlan(plan.id)}
+                        className="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary"
+                      >
+                        <p className="text-sm font-semibold">{plan.label}</p>
+                        <p className="mt-1 text-lg font-bold">
+                          {plan.price_cents === 0 ? "Free" : formatPrice(plan.price_cents, "usd")}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Up to {plan.capacity.toLocaleString()} people
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Stats */}
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <Stat
@@ -212,11 +343,7 @@ function ManageEvent() {
                 label="Paid"
                 value={ev.price_cents === 0 ? "—" : `${paidCount} / ${participants.length}`}
               />
-              <Stat
-                icon={DollarSign}
-                label="Revenue"
-                value={formatPrice(revenue, ev.currency)}
-              />
+              <Stat icon={DollarSign} label="Revenue" value={formatPrice(revenue, ev.currency)} />
             </div>
 
             {/* Per-type breakdown */}
@@ -226,9 +353,11 @@ function ManageEvent() {
                 <div className="space-y-2">
                   {ev.event_types.map((et) => {
                     const count = participants.filter((p) =>
-                      p.event_types?.some((t) => t.id === et.id)
+                      p.event_types?.some((t) => t.id === et.id),
                     ).length;
-                    const pct = participants.length ? Math.round((count / participants.length) * 100) : 0;
+                    const pct = participants.length
+                      ? Math.round((count / participants.length) * 100)
+                      : 0;
                     return (
                       <div key={et.id} className="flex items-center gap-3">
                         <span className="w-32 truncate text-sm">{et.name}</span>
@@ -239,7 +368,8 @@ function ManageEvent() {
                           />
                         </div>
                         <span className="w-16 text-right text-sm text-muted-foreground">
-                          {count}{et.capacity ? ` / ${et.capacity}` : ""}
+                          {count}
+                          {et.capacity ? ` / ${et.capacity}` : ""}
                         </span>
                       </div>
                     );
@@ -250,7 +380,9 @@ function ManageEvent() {
 
             {/* Tabs */}
             <Tabs defaultValue="participants" className="mt-10">
-              <TabsList className={`grid w-full ${ev?.survey_id ? "max-w-lg grid-cols-3" : "max-w-sm grid-cols-2"}`}>
+              <TabsList
+                className={`grid w-full ${ev?.survey_id ? "max-w-lg grid-cols-3" : "max-w-sm grid-cols-2"}`}
+              >
                 <TabsTrigger value="participants">
                   <Users className="h-4 w-4 mr-1.5" /> Participants
                 </TabsTrigger>
@@ -451,7 +583,9 @@ function ManageEvent() {
                       {/* Survey title + response count */}
                       <div className="mb-6 flex items-center justify-between">
                         <div>
-                          <h2 className="font-semibold">{surveyResponsesQuery.data.survey.title}</h2>
+                          <h2 className="font-semibold">
+                            {surveyResponsesQuery.data.survey.title}
+                          </h2>
                           <p className="text-sm text-muted-foreground">
                             {surveyResponsesQuery.data.responses.length} response
                             {surveyResponsesQuery.data.responses.length !== 1 ? "s" : ""}
@@ -468,15 +602,18 @@ function ManageEvent() {
                         /* Per-question breakdown */
                         <div className="space-y-6">
                           {surveyResponsesQuery.data.survey.questions.map((q) => {
-                            const answersForQ = surveyResponsesQuery.data!.responses
-                              .map((r) => ({
+                            const answersForQ = surveyResponsesQuery
+                              .data!.responses.map((r) => ({
                                 user: r.user,
                                 answer: r.answers.find((a) => a.survey_question_id === q.id),
                               }))
                               .filter((row) => row.answer);
 
                             return (
-                              <div key={q.id} className="rounded-2xl border border-border bg-card overflow-hidden">
+                              <div
+                                key={q.id}
+                                className="rounded-2xl border border-border bg-card overflow-hidden"
+                              >
                                 <div className="border-b border-border bg-muted/40 px-5 py-3">
                                   <p className="font-medium text-sm">{q.question_text}</p>
                                   <p className="text-xs text-muted-foreground capitalize mt-0.5">
@@ -486,7 +623,9 @@ function ManageEvent() {
                                 </div>
 
                                 {answersForQ.length === 0 ? (
-                                  <p className="px-5 py-4 text-sm text-muted-foreground">No answers yet.</p>
+                                  <p className="px-5 py-4 text-sm text-muted-foreground">
+                                    No answers yet.
+                                  </p>
                                 ) : (
                                   <div className="divide-y divide-border">
                                     {answersForQ.map(({ user, answer }, i) => (
@@ -497,12 +636,18 @@ function ManageEvent() {
                                           </p>
                                           {answer?.question_type === "text" ? (
                                             <p className="text-sm whitespace-pre-wrap">
-                                              {answer.answer_text || <span className="italic text-muted-foreground">No answer</span>}
+                                              {answer.answer_text || (
+                                                <span className="italic text-muted-foreground">
+                                                  No answer
+                                                </span>
+                                              )}
                                             </p>
                                           ) : (
                                             <div className="flex flex-wrap gap-1.5">
                                               {(answer?.answer_options ?? []).length === 0 ? (
-                                                <span className="text-sm italic text-muted-foreground">No answer</span>
+                                                <span className="text-sm italic text-muted-foreground">
+                                                  No answer
+                                                </span>
                                               ) : (
                                                 (answer?.answer_options ?? []).map((optId) => {
                                                   const opt = q.options.find((o) => o.id === optId);
